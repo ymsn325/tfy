@@ -55,7 +55,8 @@ void TFView::drawTFMap(Sound *sound) {
   double specMax = sound->specMax();
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
-      buf[y * w + x] = (spec[x][y] + 100.0) / (specMax + 100.0) * 255.0;
+      buf[(h - 1 - y) * w + x] =
+          (spec[x][y] + 100.0) / (specMax + 100.0) * 255.0;
     }
   }
   QImage img(buf, w, h, QImage::Format_Grayscale8);
