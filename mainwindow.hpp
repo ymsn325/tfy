@@ -20,10 +20,14 @@ class WaveView : public QGraphicsView {
 class TFView : public QGraphicsView {
  public:
   TFView(int x, int y, int w, int h, QWidget *parent);
+  ~TFView();
   void drawTFMap(Sound *sound);
 
  private:
   QGraphicsScene *m_scene;
+  void double2rgb(const double x, unsigned char *r, unsigned char *g,
+                  unsigned char *b);
+  unsigned char *m_data;
 };
 
 class MainWindow : public QMainWindow {

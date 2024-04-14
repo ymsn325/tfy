@@ -11,8 +11,9 @@ class Sound {
   int nSamples() { return m_nSamples; }
   int nMargin() { return m_nMargin; }
   double *x() { return m_x; }
-  double **spec() { return m_spec; }
+  complex<double> **spec() { return m_spec; }
   double specMax() { return m_specMax; }
+  double specMin() { return m_specMin; }
   void stft(int hopSize);
 
  private:
@@ -23,6 +24,7 @@ class Sound {
   int m_nMargin;
   double *m_x;
   FFT *m_fft;
-  double **m_spec;
+  complex<double> **m_spec;
   double m_specMax;
+  double m_specMin;
 };
