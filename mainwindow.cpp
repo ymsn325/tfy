@@ -3,6 +3,9 @@
 #include <QDebug>
 #include <QImage>
 #include <QPixmap>
+#include <iostream>
+
+using namespace std;
 
 WaveView::WaveView(int x, int y, int w, int h, QWidget *parent)
     : QGraphicsView(parent) {
@@ -42,26 +45,73 @@ TFView::TFView(int x, int y, int w, int h, QWidget *parent)
     : QGraphicsView(parent) {
   m_scene = new QGraphicsScene(x, y, w, h, parent);
   m_scene->setBackgroundBrush(QColor("black"));
+  m_data = new unsigned char[w * h * 3];
   setScene(m_scene);
 }
+
+TFView::~TFView() { delete[] m_data; }
 
 void TFView::drawTFMap(Sound *sound) {
   int w = m_scene->width();
   int h = m_scene->height();
   int hopSize = sound->nSamples() / w;
   sound->stft(hopSize);
-  double **spec = sound->spec();
-  unsigned char *buf = new unsigned char[h * w];
+  complex<double> **spec = sound->spec();
   double specMax = sound->specMax();
+  double specMin = sound->specMin();
+  double upper_dB, lower_dB;
+  upper_dB = 20.0 * log10(specMax);
+  // lower_dB = 20.0 * log10(specMin);
+  lower_dB = -100.0;
   for (int y = 0; y < h; y++) {
     for (int x = 0; x < w; x++) {
-      buf[(h - 1 - y) * w + x] =
-          (spec[x][y] + 100.0) / (specMax + 100.0) * 255.0;
+      double2rgb(
+          (20.0 * log10(abs(spec[x][y])) - lower_dB) / (upper_dB - lower_dB),
+          m_data + ((h - 1 - y) * w + x) * 3,       // R
+          m_data + ((h - 1 - y) * w + x) * 3 + 1,   // G
+          m_data + ((h - 1 - y) * w + x) * 3 + 2);  // B
     }
   }
-  QImage img(buf, w, h, QImage::Format_Grayscale8);
+  QImage img(m_data, w, h, QImage::Format_RGB888);
   QPixmap pixmap = QPixmap::fromImage(img);
   m_scene->addPixmap(pixmap);
+}
+
+void TFView::double2rgb(double x, unsigned char *r, unsigned char *g,
+                        unsigned char *b) {
+  if (x < 3.0 / 7.0) {
+    *r = 0;
+  } else if (x < 4.0 / 7.0) {
+    *r = 255.0 * (x - (3.0 / 7.0)) / ((4.0 - 3.0) / 7.0);
+  } else {
+    *r = 255;
+  }
+  if (x < 1.0 / 7.0) {
+    *g = 0;
+  } else if (x < 2.0 / 7.0) {
+    *g = 255.0 * (x - (3.0 / 7.0)) / ((2.0 - 1.0) / 7.0);
+  } else if (x < 4.0 / 7.0) {
+    *g = 255;
+  } else if (x < 5.0 / 7.0) {
+    *g = 255.0 * ((5.0 / 7.0) - x) / ((5.0 - 4.0) / 7.0);
+  } else if (x < 6.0 / 7.0) {
+    *g = 0;
+  } else {
+    *g = 255 * (x - 6.0 / 7.0) / ((7.0 - 6.0) / 7.0);
+  }
+  if (x < 1.0 / 7.0) {
+    *b = 255.0 * x / (1.0 / 7.0);
+  } else if (x < 2.0 / 7.0) {
+    *b = 255;
+  } else if (x < 3.0 / 7.0) {
+    *b = 255.0 * (3.0 / 7.0 - x) / ((3.0 - 2.0) / 7.0);
+  } else if (x < 5.0 / 7.0) {
+    *b = 0;
+  } else if (x < 6.0 / 7.0) {
+    *b = 255.0 * (x - 5.0 / 7.0) / ((6.0 - 5.0) / 7.0);
+  } else {
+    *b = 255;
+  }
 }
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
@@ -74,7 +124,6 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_topLayout->addWidget(m_waveView);
   m_centralWidget->setLayout(m_topLayout);
   setCentralWidget(m_centralWidget);
-  //   m_sound = new Sound("C:/Users/yamas/Documents/audio/sin1k.wav");
   m_sound =
       new Sound("C:/Users/yamas/Documents/audio/ichimoji_PF02_0501_033.wav");
   m_waveView->drawWaveForm(m_sound);

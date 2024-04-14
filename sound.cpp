@@ -88,11 +88,12 @@ void Sound::stft(int hopSize) {
   complex<double> *out = new complex<double>[nFFT];
   double *window = m_fft->window();
   double width = m_nSamples / hopSize;
-  m_spec = new double *[int(width)];
+  m_spec = new complex<double> *[int(width)];
   for (int i = 0; i < width; i++) {
-    m_spec[i] = new double[nFFT / 2];
+    m_spec[i] = new complex<double>[nFFT / 2];
   }
-  m_specMax = -100.0;
+  m_specMax = 0.0;
+  m_specMin = 1.0;
   for (int i = 0; i < m_nSamples / hopSize; i++) {
     for (int n = -nFFT / 2; n < nFFT / 2; n++) {
       in[n + nFFT / 2] =
@@ -100,9 +101,12 @@ void Sound::stft(int hopSize) {
     }
     m_fft->exec(in, out);
     for (int k = 0; k < nFFT / 2; k++) {
-      m_spec[i][k] = 20.0 * log10(abs(out[k]) + pow(10.0, -100.0 / 20.0));
-      if (m_spec[i][k] > m_specMax) {
-        m_specMax = m_spec[i][k];
+      m_spec[i][k] = out[k];
+      if (abs(m_spec[i][k]) > m_specMax) {
+        m_specMax = abs(m_spec[i][k]);
+      }
+      if (abs(m_spec[i][k]) < m_specMin) {
+        m_specMin = abs(m_spec[i][k]);
       }
     }
   }
