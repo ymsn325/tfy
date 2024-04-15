@@ -79,6 +79,12 @@ void TFView::drawTFMap(Sound *sound) {
 
 void TFView::double2rgb(double x, unsigned char *r, unsigned char *g,
                         unsigned char *b) {
+  if (x > 1.0) {
+    x = 1.0;
+  }
+  if (x < 0.0) {
+    x = 0.0;
+  }
   if (x < 3.0 / 7.0) {
     *r = 0;
   } else if (x < 4.0 / 7.0) {
