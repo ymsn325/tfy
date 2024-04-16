@@ -5,6 +5,8 @@
 #include <QPixmap>
 #include <iostream>
 
+#include "playback.hpp"
+
 using namespace std;
 
 WaveView::WaveView(int x, int y, int w, int h, QWidget *parent)
@@ -132,6 +134,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
       new Sound("C:/Users/yamas/Documents/audio/ichimoji_PF02_0501_033.wav");
   m_waveView->drawWaveForm(m_sound);
   m_tfView->drawTFMap(m_sound);
+  m_audioDev = new QMediaDevices(this);
+  m_audioStream.reset(new AudioStream(m_sound));
+  QAudioFormat audioFormat;
+  audioFormat.setChannelCount(1);
+  audioFormat.setSampleRate(44100.0);
+  audioFormat.setSampleFormat(QAudioFormat::Int16);
+  m_audioSink.reset(
+      new QAudioSink(m_audioDev->defaultAudioOutput(), audioFormat));
+  m_audioStream->start();
   m_playFlag = false;
 }
 
@@ -142,8 +153,10 @@ void MainWindow::playButtonClickedHandler() {
   if (m_playFlag == false) {
     m_playFlag = true;
     m_playButton->setText("Pause");
+    m_audioSink->start(m_audioStream.data());
   } else {
     m_playFlag = false;
     m_playButton->setText("Play");
+    m_audioSink->suspend();
   }
 }

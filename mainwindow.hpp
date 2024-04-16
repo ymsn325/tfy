@@ -1,12 +1,16 @@
 #pragma once
 
+#include <QAudioSink>
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QMainWindow>
+#include <QMediaDevices>
 #include <QPushButton>
+#include <QScopedPointer>
 #include <QVBoxLayout>
 #include <QWidget>
 
+#include "playback.hpp"
 #include "sound.hpp"
 
 class WaveView : public QGraphicsView {
@@ -48,5 +52,8 @@ class MainWindow : public QMainWindow {
   WaveView *m_waveView;
   QPushButton *m_playButton;
   Sound *m_sound;
+  QMediaDevices *m_audioDev;
+  QScopedPointer<AudioStream> m_audioStream;
+  QScopedPointer<QAudioSink> m_audioSink;
   bool m_playFlag;
 };
