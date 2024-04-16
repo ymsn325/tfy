@@ -3,6 +3,7 @@
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QMainWindow>
+#include <QPushButton>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -37,10 +38,15 @@ class MainWindow : public QMainWindow {
   MainWindow(QWidget *parent = nullptr);
   ~MainWindow();
 
+ public slots:
+  void playButtonClickedHandler();
+
  private:
   QWidget *m_centralWidget;
   QVBoxLayout *m_topLayout;
   TFView *m_tfView;
   WaveView *m_waveView;
+  QPushButton *m_playButton;
   Sound *m_sound;
+  bool m_playFlag;
 };

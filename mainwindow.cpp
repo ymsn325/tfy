@@ -120,14 +120,30 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_topLayout->setSpacing(0);
   m_tfView = new TFView(0, 0, 800, 1024, m_centralWidget);
   m_waveView = new WaveView(0, 0, 800, 200, m_centralWidget);
+  m_playButton = new QPushButton("Play", this);
+  connect(m_playButton, &QPushButton::clicked, this,
+          &MainWindow::playButtonClickedHandler);
   m_topLayout->addWidget(m_tfView);
   m_topLayout->addWidget(m_waveView);
+  m_topLayout->addWidget(m_playButton);
   m_centralWidget->setLayout(m_topLayout);
   setCentralWidget(m_centralWidget);
   m_sound =
       new Sound("C:/Users/yamas/Documents/audio/ichimoji_PF02_0501_033.wav");
   m_waveView->drawWaveForm(m_sound);
   m_tfView->drawTFMap(m_sound);
+  m_playFlag = false;
 }
 
 MainWindow::~MainWindow() {}
+
+void MainWindow::playButtonClickedHandler() {
+  qDebug() << "Play button clicked.";
+  if (m_playFlag == false) {
+    m_playFlag = true;
+    m_playButton->setText("Pause");
+  } else {
+    m_playFlag = false;
+    m_playButton->setText("Play");
+  }
+}
