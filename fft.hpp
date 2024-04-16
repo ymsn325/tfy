@@ -1,3 +1,5 @@
+#pragma once
+
 #include <complex>
 
 using namespace std;

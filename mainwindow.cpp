@@ -5,6 +5,8 @@
 #include <QPixmap>
 #include <iostream>
 
+#include "playback.hpp"
+
 using namespace std;
 
 WaveView::WaveView(int x, int y, int w, int h, QWidget *parent)
@@ -126,14 +128,61 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_topLayout->setSpacing(0);
   m_tfView = new TFView(0, 0, 800, 1024, m_centralWidget);
   m_waveView = new WaveView(0, 0, 800, 200, m_centralWidget);
+  m_playButton = new QPushButton("Play", this);
+  connect(m_playButton, &QPushButton::clicked, this,
+          &MainWindow::playButtonClickedHandler);
   m_topLayout->addWidget(m_tfView);
   m_topLayout->addWidget(m_waveView);
+  m_topLayout->addWidget(m_playButton);
   m_centralWidget->setLayout(m_topLayout);
   setCentralWidget(m_centralWidget);
   m_sound =
       new Sound("C:/Users/yamas/Documents/audio/ichimoji_PF02_0501_033.wav");
   m_waveView->drawWaveForm(m_sound);
   m_tfView->drawTFMap(m_sound);
+  m_audioDev = new QMediaDevices(this);
+  m_audioStream.reset(new AudioStream(m_sound));
+  connect(m_audioStream.get(), &AudioStream::stopped, this,
+          &MainWindow::streamStoppedHandler);
+  m_audioStream->start();
+  QAudioFormat audioFormat;
+  audioFormat.setChannelCount(1);
+  audioFormat.setSampleRate(44100.0);
+  audioFormat.setSampleFormat(QAudioFormat::Int16);
+  m_audioSink.reset(
+      new QAudioSink(m_audioDev->defaultAudioOutput(), audioFormat));
+  m_audioIO = m_audioSink->start();
+  m_playFlag = false;
+  m_audioPlaybackTimer = new QTimer(this);
+  connect(m_audioPlaybackTimer, &QTimer::timeout, this,
+          &MainWindow::playbackTimerTimeoutHandler);
 }
 
 MainWindow::~MainWindow() {}
+
+void MainWindow::playButtonClickedHandler() {
+  if (m_playFlag == false) {
+    m_playFlag = true;
+    m_playButton->setText("Pause");
+    m_audioPlaybackTimer->start(10);
+  } else {
+    m_playFlag = false;
+    m_playButton->setText("Play");
+    m_audioPlaybackTimer->stop();
+  }
+}
+
+void MainWindow::streamStoppedHandler() {
+  m_playButton->setText("Play");
+  m_audioPlaybackTimer->stop();
+  m_playFlag = false;
+}
+
+void MainWindow::playbackTimerTimeoutHandler() {
+  int len = m_audioSink->bytesFree();
+  QByteArray buf(len, 0);
+  len = m_audioStream->read(buf.data(), len);
+  if (len) {
+    m_audioIO->write(buf.data(), len);
+  }
+}

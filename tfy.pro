@@ -1,4 +1,4 @@
-QT       += core gui
+QT       += core gui multimedia
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -12,11 +12,13 @@ SOURCES += \
     fft.cpp \
     main.cpp \
     mainwindow.cpp \
+    playback.cpp \
     sound.cpp
 
 HEADERS += \
     fft.hpp \
     mainwindow.hpp \
+    playback.hpp \
     sound.hpp
 
 # Default rules for deployment.
