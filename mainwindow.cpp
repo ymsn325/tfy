@@ -142,27 +142,47 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_tfView->drawTFMap(m_sound);
   m_audioDev = new QMediaDevices(this);
   m_audioStream.reset(new AudioStream(m_sound));
+  connect(m_audioStream.get(), &AudioStream::stopped, this,
+          &MainWindow::streamStoppedHandler);
+  m_audioStream->start();
   QAudioFormat audioFormat;
   audioFormat.setChannelCount(1);
   audioFormat.setSampleRate(44100.0);
   audioFormat.setSampleFormat(QAudioFormat::Int16);
   m_audioSink.reset(
       new QAudioSink(m_audioDev->defaultAudioOutput(), audioFormat));
-  m_audioStream->start();
+  m_audioIO = m_audioSink->start();
   m_playFlag = false;
+  m_audioPlaybackTimer = new QTimer(this);
+  connect(m_audioPlaybackTimer, &QTimer::timeout, this,
+          &MainWindow::playbackTimerTimeoutHandler);
 }
 
 MainWindow::~MainWindow() {}
 
 void MainWindow::playButtonClickedHandler() {
-  qDebug() << "Play button clicked.";
   if (m_playFlag == false) {
     m_playFlag = true;
     m_playButton->setText("Pause");
-    m_audioSink->start(m_audioStream.data());
+    m_audioPlaybackTimer->start(10);
   } else {
     m_playFlag = false;
     m_playButton->setText("Play");
-    m_audioSink->suspend();
+    m_audioPlaybackTimer->stop();
+  }
+}
+
+void MainWindow::streamStoppedHandler() {
+  m_playButton->setText("Play");
+  m_audioPlaybackTimer->stop();
+  m_playFlag = false;
+}
+
+void MainWindow::playbackTimerTimeoutHandler() {
+  int len = m_audioSink->bytesFree();
+  QByteArray buf(len, 0);
+  len = m_audioStream->read(buf.data(), len);
+  if (len) {
+    m_audioIO->write(buf.data(), len);
   }
 }

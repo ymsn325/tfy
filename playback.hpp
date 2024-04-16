@@ -6,6 +6,10 @@
 #include "sound.hpp"
 
 class AudioStream : public QIODevice {
+  Q_OBJECT
+ signals:
+  void stopped();
+
  public:
   AudioStream(Sound *sound);
   void start() { open(QIODevice::ReadOnly); }
@@ -24,6 +28,7 @@ class AudioStream : public QIODevice {
     return m_buf.size() + QIODevice::bytesAvailable();
   }
   qint64 size() const override { return m_buf.size(); }
+  void setPos(int pos) { m_pos = pos; }
 
  private:
   int m_pos = 0;

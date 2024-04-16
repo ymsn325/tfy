@@ -7,6 +7,7 @@
 #include <QMediaDevices>
 #include <QPushButton>
 #include <QScopedPointer>
+#include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
 
@@ -44,6 +45,8 @@ class MainWindow : public QMainWindow {
 
  public slots:
   void playButtonClickedHandler();
+  void streamStoppedHandler();
+  void playbackTimerTimeoutHandler();
 
  private:
   QWidget *m_centralWidget;
@@ -53,7 +56,9 @@ class MainWindow : public QMainWindow {
   QPushButton *m_playButton;
   Sound *m_sound;
   QMediaDevices *m_audioDev;
+  QTimer *m_audioPlaybackTimer;
   QScopedPointer<AudioStream> m_audioStream;
   QScopedPointer<QAudioSink> m_audioSink;
+  QIODevice *m_audioIO;
   bool m_playFlag;
 };
