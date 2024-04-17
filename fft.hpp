@@ -4,7 +4,7 @@
 
 using namespace std;
 
-enum class Window { Gaussian, Hann, Hamming, Rect };
+enum class Window { Gaussian, Hann, Hamming, Rect, NumWindow };
 
 class FFT {
  public:
@@ -13,6 +13,10 @@ class FFT {
   int nFFT() { return m_nFFT; }
   double *window() { return m_window; }
   void exec(double *in, complex<double> *out);
+  void setWindow(Window windowType) {
+    m_window = genWindow(windowType);
+    m_areaWindow = calcWindowArea();
+  }
 
  private:
   int *genBitRevTable();
