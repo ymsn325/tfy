@@ -1,5 +1,6 @@
 #include "fft.hpp"
 
+#include <QDebug>
 #include <QtMath>
 #include <iostream>
 
@@ -36,21 +37,25 @@ double* FFT::genWindow(Window windowType) {
   double* window = new double[m_nFFT];
   switch (windowType) {
     case Window::Gaussian:
+      qDebug() << "Window type: Gaussian";
       for (int i = 0; i < m_nFFT; i++) {
         window[i] = exp(-pow(3.0 * (m_nFFT / 2.0 - i) / (m_nFFT / 2.0), 2.0));
       }
       break;
     case Window::Hamming:
+      qDebug() << "Window type: Hamming";
       for (int i = 0; i < m_nFFT; i++) {
         window[i] = 0.54 - 0.46 * cos(2.0 * M_PI * i / m_nFFT);
       }
       break;
     case Window::Hann:
+      qDebug() << "Window type: Hann";
       for (int i = 0; i < m_nFFT; i++) {
         window[i] = 0.5 - 0.5 * cos(2.0 * M_PI * i / m_nFFT);
       }
       break;
     case Window::Rect:
+      qDebug() << "Window type: Rect";
       for (int i = 0; i < m_nFFT; i++) {
         window[i] = 1.0;
       }

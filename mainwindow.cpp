@@ -5,6 +5,7 @@
 #include <QPixmap>
 #include <iostream>
 
+#include "fft.hpp"
 #include "playback.hpp"
 
 using namespace std;
@@ -53,11 +54,11 @@ TFView::TFView(int x, int y, int w, int h, QWidget *parent)
 
 TFView::~TFView() { delete[] m_data; }
 
-void TFView::drawTFMap(Sound *sound) {
+void TFView::drawTFMap(Sound *sound, Window windowType) {
   int w = m_scene->width();
   int h = m_scene->height();
   int hopSize = sound->nSamples() / w;
-  sound->stft(hopSize);
+  sound->stft(hopSize, windowType);
   complex<double> **spec = sound->spec();
   double specMax = sound->specMax();
   double specMin = sound->specMin();
@@ -126,8 +127,32 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_centralWidget = new QWidget(this);
   m_topLayout = new QVBoxLayout(m_centralWidget);
   m_topLayout->setSpacing(0);
+  m_tfLayout = new QHBoxLayout();
   m_tfView = new TFView(0, 0, 800, 1024, m_centralWidget);
-  m_waveView = new WaveView(0, 0, 800, 200, m_centralWidget);
+  m_windowComboBox = new QComboBox(this);
+  for (int w = 0; w < (int)Window::NumWindow; w++) {
+    switch ((Window)w) {
+      case Window::Gaussian:
+        m_windowComboBox->addItem("Gauusian");
+        break;
+      case Window::Hann:
+        m_windowComboBox->addItem("Hann");
+        break;
+      case Window::Hamming:
+        m_windowComboBox->addItem("Hamming");
+        break;
+      case Window::Rect:
+        m_windowComboBox->addItem("Rect");
+        break;
+      default:
+        break;
+    }
+  }
+  connect(m_windowComboBox, &QComboBox::currentIndexChanged, this,
+          &MainWindow::windowChangedHandler);
+  m_tfLayout->addWidget(m_tfView);
+  m_tfLayout->addWidget(m_windowComboBox);
+  m_waveView = new WaveView(0, 0, 800, 100, m_centralWidget);
   m_playbackWidget = new QWidget(this);
   m_playbackLayout = new QHBoxLayout();
   m_volSlider = new QSlider(Qt::Horizontal, this);
@@ -145,14 +170,14 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_playbackLayout->addWidget(m_playButton);
   connect(m_playButton, &QPushButton::clicked, this,
           &MainWindow::playButtonClickedHandler);
-  m_topLayout->addWidget(m_tfView);
+  m_topLayout->addLayout(m_tfLayout);
   m_topLayout->addWidget(m_waveView);
   m_topLayout->addLayout(m_playbackLayout);
   setCentralWidget(m_centralWidget);
   m_sound =
       new Sound("C:/Users/yamas/Documents/audio/ichimoji_PF02_0501_033.wav");
   m_waveView->drawWaveForm(m_sound);
-  m_tfView->drawTFMap(m_sound);
+  m_tfView->drawTFMap(m_sound, (Window)m_windowComboBox->currentIndex());
   m_audioDev = new QMediaDevices(this);
   m_audioStream.reset(new AudioStream(m_sound));
   connect(m_audioStream.get(), &AudioStream::stopped, this,
@@ -202,4 +227,8 @@ void MainWindow::playbackTimerTimeoutHandler() {
 
 void MainWindow::volSliderValueChangedHandler(int val) {
   m_audioSink->setVolume(val / 100.0);
+}
+
+void MainWindow::windowChangedHandler(int val) {
+  m_tfView->drawTFMap(m_sound, (Window)val);
 }

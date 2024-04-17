@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QAudioSink>
+#include <QComboBox>
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QHBoxLayout>
@@ -29,7 +30,7 @@ class TFView : public QGraphicsView {
  public:
   TFView(int x, int y, int w, int h, QWidget *parent);
   ~TFView();
-  void drawTFMap(Sound *sound);
+  void drawTFMap(Sound *sound, Window windowType);
 
  private:
   QGraphicsScene *m_scene;
@@ -50,11 +51,14 @@ class MainWindow : public QMainWindow {
   void streamStoppedHandler();
   void playbackTimerTimeoutHandler();
   void volSliderValueChangedHandler(int val);
+  void windowChangedHandler(int val);
 
  private:
   QWidget *m_centralWidget;
   QVBoxLayout *m_topLayout;
+  QHBoxLayout *m_tfLayout;
   TFView *m_tfView;
+  QComboBox *m_windowComboBox;
   WaveView *m_waveView;
   QWidget *m_playbackWidget;
   QHBoxLayout *m_playbackLayout;
