@@ -128,13 +128,26 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_topLayout->setSpacing(0);
   m_tfView = new TFView(0, 0, 800, 1024, m_centralWidget);
   m_waveView = new WaveView(0, 0, 800, 200, m_centralWidget);
+  m_playbackWidget = new QWidget(this);
+  m_playbackLayout = new QHBoxLayout();
+  m_volSlider = new QSlider(Qt::Horizontal, this);
+  m_volSlider->setSizePolicy(
+      QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding));
+  m_volSlider->setTickPosition(QSlider::TicksBelow);
+  m_volSlider->setTickInterval(50);
+  m_volSlider->setValue(m_volSlider->maximum());
+  connect(m_volSlider, &QSlider::valueChanged, this,
+          &MainWindow::volSliderValueChangedHandler);
   m_playButton = new QPushButton("Play", this);
+  m_playButton->setSizePolicy(
+      QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding));
+  m_playbackLayout->addWidget(m_volSlider);
+  m_playbackLayout->addWidget(m_playButton);
   connect(m_playButton, &QPushButton::clicked, this,
           &MainWindow::playButtonClickedHandler);
   m_topLayout->addWidget(m_tfView);
   m_topLayout->addWidget(m_waveView);
-  m_topLayout->addWidget(m_playButton);
-  m_centralWidget->setLayout(m_topLayout);
+  m_topLayout->addLayout(m_playbackLayout);
   setCentralWidget(m_centralWidget);
   m_sound =
       new Sound("C:/Users/yamas/Documents/audio/ichimoji_PF02_0501_033.wav");
@@ -185,4 +198,8 @@ void MainWindow::playbackTimerTimeoutHandler() {
   if (len) {
     m_audioIO->write(buf.data(), len);
   }
+}
+
+void MainWindow::volSliderValueChangedHandler(int val) {
+  m_audioSink->setVolume(val / 100.0);
 }

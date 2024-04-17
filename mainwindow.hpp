@@ -3,10 +3,12 @@
 #include <QAudioSink>
 #include <QGraphicsScene>
 #include <QGraphicsView>
+#include <QHBoxLayout>
 #include <QMainWindow>
 #include <QMediaDevices>
 #include <QPushButton>
 #include <QScopedPointer>
+#include <QSlider>
 #include <QTimer>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -47,12 +49,16 @@ class MainWindow : public QMainWindow {
   void playButtonClickedHandler();
   void streamStoppedHandler();
   void playbackTimerTimeoutHandler();
+  void volSliderValueChangedHandler(int val);
 
  private:
   QWidget *m_centralWidget;
   QVBoxLayout *m_topLayout;
   TFView *m_tfView;
   WaveView *m_waveView;
+  QWidget *m_playbackWidget;
+  QHBoxLayout *m_playbackLayout;
+  QSlider *m_volSlider;
   QPushButton *m_playButton;
   Sound *m_sound;
   QMediaDevices *m_audioDev;
