@@ -130,7 +130,11 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_upperLayout = new QHBoxLayout();
   m_pixmapLayout = new QVBoxLayout();
   m_tfView = new TFView(0, 0, 800, 1024, this);
+  m_tfView->setSizePolicy(
+      QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding));
   m_waveView = new WaveView(0, 0, 800, 100, this);
+  m_waveView->setSizePolicy(
+      QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
   m_pixmapLayout->addWidget(m_tfView);
   m_pixmapLayout->addWidget(m_waveView);
   m_upperLayout->addLayout(m_pixmapLayout);
