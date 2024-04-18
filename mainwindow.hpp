@@ -2,6 +2,7 @@
 
 #include <QAudioSink>
 #include <QComboBox>
+#include <QGraphicsItemGroup>
 #include <QGraphicsScene>
 #include <QGraphicsView>
 #include <QHBoxLayout>
@@ -56,12 +57,12 @@ class MainWindow : public QMainWindow {
  private:
   QWidget *m_centralWidget;
   QVBoxLayout *m_topLayout;
-  QHBoxLayout *m_tfLayout;
+  QHBoxLayout *m_upperLayout;
+  QVBoxLayout *m_pixmapLayout;
   TFView *m_tfView;
   QComboBox *m_windowComboBox;
   WaveView *m_waveView;
-  QWidget *m_playbackWidget;
-  QHBoxLayout *m_playbackLayout;
+  QHBoxLayout *m_lowerLayout;
   QSlider *m_volSlider;
   QPushButton *m_playButton;
   Sound *m_sound;

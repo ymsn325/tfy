@@ -127,8 +127,13 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_centralWidget = new QWidget(this);
   m_topLayout = new QVBoxLayout(m_centralWidget);
   m_topLayout->setSpacing(0);
-  m_tfLayout = new QHBoxLayout();
-  m_tfView = new TFView(0, 0, 800, 1024, m_centralWidget);
+  m_upperLayout = new QHBoxLayout();
+  m_pixmapLayout = new QVBoxLayout();
+  m_tfView = new TFView(0, 0, 800, 1024, this);
+  m_waveView = new WaveView(0, 0, 800, 100, this);
+  m_pixmapLayout->addWidget(m_tfView);
+  m_pixmapLayout->addWidget(m_waveView);
+  m_upperLayout->addLayout(m_pixmapLayout);
   m_windowComboBox = new QComboBox(this);
   for (int w = 0; w < (int)Window::NumWindow; w++) {
     switch ((Window)w) {
@@ -150,11 +155,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   }
   connect(m_windowComboBox, &QComboBox::currentIndexChanged, this,
           &MainWindow::windowChangedHandler);
-  m_tfLayout->addWidget(m_tfView);
-  m_tfLayout->addWidget(m_windowComboBox);
-  m_waveView = new WaveView(0, 0, 800, 100, m_centralWidget);
-  m_playbackWidget = new QWidget(this);
-  m_playbackLayout = new QHBoxLayout();
+  m_upperLayout->addWidget(m_windowComboBox);
+  m_lowerLayout = new QHBoxLayout();
   m_volSlider = new QSlider(Qt::Horizontal, this);
   m_volSlider->setSizePolicy(
       QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding));
@@ -166,13 +168,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_playButton = new QPushButton("Play", this);
   m_playButton->setSizePolicy(
       QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding));
-  m_playbackLayout->addWidget(m_volSlider);
-  m_playbackLayout->addWidget(m_playButton);
+  m_lowerLayout->addWidget(m_volSlider);
+  m_lowerLayout->addWidget(m_playButton);
   connect(m_playButton, &QPushButton::clicked, this,
           &MainWindow::playButtonClickedHandler);
-  m_topLayout->addLayout(m_tfLayout);
-  m_topLayout->addWidget(m_waveView);
-  m_topLayout->addLayout(m_playbackLayout);
+  m_topLayout->addLayout(m_upperLayout);
+  m_topLayout->addLayout(m_lowerLayout);
   setCentralWidget(m_centralWidget);
   m_sound =
       new Sound("C:/Users/yamas/Documents/audio/ichimoji_PF02_0501_033.wav");
