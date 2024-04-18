@@ -153,13 +153,15 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
         break;
     }
   }
+  m_windowComboBox->setSizePolicy(
+      QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
   connect(m_windowComboBox, &QComboBox::currentIndexChanged, this,
           &MainWindow::windowChangedHandler);
   m_upperLayout->addWidget(m_windowComboBox);
   m_lowerLayout = new QHBoxLayout();
   m_volSlider = new QSlider(Qt::Horizontal, this);
   m_volSlider->setSizePolicy(
-      QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding));
+      QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
   m_volSlider->setTickPosition(QSlider::TicksBelow);
   m_volSlider->setTickInterval(50);
   m_volSlider->setValue(m_volSlider->maximum());
@@ -167,7 +169,7 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
           &MainWindow::volSliderValueChangedHandler);
   m_playButton = new QPushButton("Play", this);
   m_playButton->setSizePolicy(
-      QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Expanding));
+      QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
   m_lowerLayout->addWidget(m_volSlider);
   m_lowerLayout->addWidget(m_playButton);
   connect(m_playButton, &QPushButton::clicked, this,
