@@ -124,6 +124,7 @@ void TFView::double2rgb(double x, unsigned char *r, unsigned char *g,
 }
 
 MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
+  createMenuBar();
   m_centralWidget = new QWidget(this);
   m_topLayout = new QVBoxLayout(m_centralWidget);
   m_topLayout->setSpacing(0);
@@ -200,6 +201,33 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
 }
 
 MainWindow::~MainWindow() {}
+
+void MainWindow::createMenuBar() {
+  m_menuBar = new QMenuBar(this);
+  m_menuFile = new QMenu("&File");
+  m_openAction = new QAction("&Open", this);
+  m_openAction->setShortcut(QKeySequence(QKeySequence::Open));
+  m_quitAction = new QAction("&Quit", this);
+  m_openAction->setShortcut(QKeySequence(QKeySequence::Quit));
+  m_menuFile->addAction(m_openAction);
+  m_menuFile->addSeparator();
+  m_menuFile->addAction(m_quitAction);
+  m_menuBar->addMenu(m_menuFile);
+  connect(m_openAction, &QAction::triggered, this,
+          &MainWindow::openActionTriggeredHandler);
+  connect(m_quitAction, &QAction::triggered, this,
+          &MainWindow::quitActionTriggeredHandler);
+  setMenuBar(m_menuBar);
+}
+
+void MainWindow::openActionTriggeredHandler() {
+  qDebug() << "openAction triggered.";
+}
+
+void MainWindow::quitActionTriggeredHandler() {
+  qDebug() << "quitAction triggered.";
+  close();
+}
 
 void MainWindow::playButtonClickedHandler() {
   if (m_playFlag == false) {

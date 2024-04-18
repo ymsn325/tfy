@@ -1,5 +1,6 @@
 #pragma once
 
+#include <QAction>
 #include <QAudioSink>
 #include <QComboBox>
 #include <QGraphicsItemGroup>
@@ -8,6 +9,8 @@
 #include <QHBoxLayout>
 #include <QMainWindow>
 #include <QMediaDevices>
+#include <QMenu>
+#include <QMenuBar>
 #include <QPushButton>
 #include <QScopedPointer>
 #include <QSlider>
@@ -46,8 +49,11 @@ class MainWindow : public QMainWindow {
  public:
   MainWindow(QWidget *parent = nullptr);
   ~MainWindow();
+  void createMenuBar();
 
  public slots:
+  void openActionTriggeredHandler();
+  void quitActionTriggeredHandler();
   void playButtonClickedHandler();
   void streamStoppedHandler();
   void playbackTimerTimeoutHandler();
@@ -55,6 +61,10 @@ class MainWindow : public QMainWindow {
   void windowChangedHandler(int val);
 
  private:
+  QMenuBar *m_menuBar;
+  QMenu *m_menuFile;
+  QAction *m_openAction;
+  QAction *m_quitAction;
   QWidget *m_centralWidget;
   QVBoxLayout *m_topLayout;
   QHBoxLayout *m_upperLayout;
