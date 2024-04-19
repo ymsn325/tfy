@@ -11,11 +11,27 @@
 
 using namespace std;
 
-WaveView::WaveView(int x, int y, int w, int h, QWidget *parent)
+WaveScene::WaveScene(int x, int y, int w, int h, MainWindow *parent)
+    : QGraphicsScene(x, y, w, h, parent) {
+  m_parent = parent;
+}
+
+void WaveScene::mouseMoveEvent(QGraphicsSceneMouseEvent *e) {
+  if (!m_parent->sound()) {
+    return;
+  }
+  double duration = m_parent->sound()->duration();
+  int x = e->scenePos().x();
+  double time = x / width() * duration;
+  m_parent->timeLabel()->setText(QString::number(time));
+}
+
+WaveView::WaveView(int x, int y, int w, int h, MainWindow *parent)
     : QGraphicsView(parent) {
-  m_scene = new QGraphicsScene(x, y, w, h, parent);
+  m_scene = new WaveScene(x, y, w, h, parent);
   m_scene->setBackgroundBrush(QColor(0, 0, 80));
   init();
+  setMouseTracking(true);
   setScene(m_scene);
 }
 
@@ -246,7 +262,6 @@ void MainWindow::openActionTriggeredHandler() {
   if (m_sound) {
     delete m_sound;
   }
-  qDebug() << "openAction triggered.";
   QString fname = QFileDialog::getOpenFileName(
       this, "Select audio file", "", "WAV files(*.wav);;All file(*.*)");
   m_sound = new Sound(fname.toStdString());
@@ -266,10 +281,7 @@ void MainWindow::openActionTriggeredHandler() {
   m_audioIO = m_audioSink->start();
 }
 
-void MainWindow::quitActionTriggeredHandler() {
-  qDebug() << "quitAction triggered.";
-  close();
-}
+void MainWindow::quitActionTriggeredHandler() { close(); }
 
 void MainWindow::playButtonClickedHandler() {
   if (m_sound == nullptr) {
