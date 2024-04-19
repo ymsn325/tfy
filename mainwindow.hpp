@@ -24,6 +24,7 @@
 class WaveView : public QGraphicsView {
  public:
   WaveView(int x, int y, int w, int h, QWidget *parent);
+  void init();
   void drawWaveForm(Sound *sound);
 
  private:
@@ -75,7 +76,7 @@ class MainWindow : public QMainWindow {
   QHBoxLayout *m_lowerLayout;
   QSlider *m_volSlider;
   QPushButton *m_playButton;
-  Sound *m_sound;
+  Sound *m_sound = nullptr;
   QMediaDevices *m_audioDev;
   QTimer *m_audioPlaybackTimer;
   QScopedPointer<AudioStream> m_audioStream;

@@ -1,6 +1,7 @@
 #include "mainwindow.hpp"
 
 #include <QDebug>
+#include <QFileDialog>
 #include <QImage>
 #include <QPixmap>
 #include <iostream>
@@ -14,9 +15,14 @@ WaveView::WaveView(int x, int y, int w, int h, QWidget *parent)
     : QGraphicsView(parent) {
   m_scene = new QGraphicsScene(x, y, w, h, parent);
   m_scene->setBackgroundBrush(QColor(0, 0, 80));
+  init();
+  setScene(m_scene);
+}
+
+void WaveView::init() {
+  m_scene->clear();
   m_scene->addLine(0, m_scene->height() / 2, m_scene->width(),
                    m_scene->height() / 2, QColor(100, 100, 200));
-  setScene(m_scene);
 }
 
 void WaveView::drawWaveForm(Sound *sound) {
@@ -178,22 +184,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_topLayout->addLayout(m_upperLayout);
   m_topLayout->addLayout(m_lowerLayout);
   setCentralWidget(m_centralWidget);
-  m_sound =
-      new Sound("C:/Users/yamas/Documents/audio/ichimoji_PF02_0501_033.wav");
-  m_waveView->drawWaveForm(m_sound);
-  m_tfView->drawTFMap(m_sound, (Window)m_windowComboBox->currentIndex());
   m_audioDev = new QMediaDevices(this);
-  m_audioStream.reset(new AudioStream(m_sound));
-  connect(m_audioStream.get(), &AudioStream::stopped, this,
-          &MainWindow::streamStoppedHandler);
-  m_audioStream->start();
-  QAudioFormat audioFormat;
-  audioFormat.setChannelCount(1);
-  audioFormat.setSampleRate(44100.0);
-  audioFormat.setSampleFormat(QAudioFormat::Int16);
-  m_audioSink.reset(
-      new QAudioSink(m_audioDev->defaultAudioOutput(), audioFormat));
-  m_audioIO = m_audioSink->start();
+  m_audioSink.reset();
   m_playFlag = false;
   m_audioPlaybackTimer = new QTimer(this);
   connect(m_audioPlaybackTimer, &QTimer::timeout, this,
@@ -221,7 +213,27 @@ void MainWindow::createMenuBar() {
 }
 
 void MainWindow::openActionTriggeredHandler() {
+  if (m_sound) {
+    delete m_sound;
+  }
   qDebug() << "openAction triggered.";
+  QString fname = QFileDialog::getOpenFileName(
+      this, "Select audio file", "", "WAV files(*.wav);;All file(*.*)");
+  m_sound = new Sound(fname.toStdString());
+  m_waveView->init();
+  m_waveView->drawWaveForm(m_sound);
+  m_tfView->drawTFMap(m_sound, (Window)m_windowComboBox->currentIndex());
+  m_audioStream.reset(new AudioStream(m_sound));
+  connect(m_audioStream.get(), &AudioStream::stopped, this,
+          &MainWindow::streamStoppedHandler);
+  m_audioStream->start();
+  QAudioFormat audioFormat;
+  audioFormat.setChannelCount(1);
+  audioFormat.setSampleRate(44100.0);
+  audioFormat.setSampleFormat(QAudioFormat::Int16);
+  m_audioSink.reset(
+      new QAudioSink(m_audioDev->defaultAudioOutput(), audioFormat));
+  m_audioIO = m_audioSink->start();
 }
 
 void MainWindow::quitActionTriggeredHandler() {
@@ -230,6 +242,9 @@ void MainWindow::quitActionTriggeredHandler() {
 }
 
 void MainWindow::playButtonClickedHandler() {
+  if (m_sound == nullptr) {
+    return;
+  }
   if (m_playFlag == false) {
     m_playFlag = true;
     m_playButton->setText("Pause");
@@ -257,9 +272,15 @@ void MainWindow::playbackTimerTimeoutHandler() {
 }
 
 void MainWindow::volSliderValueChangedHandler(int val) {
+  if (m_audioSink.isNull()) {
+    return;
+  }
   m_audioSink->setVolume(val / 100.0);
 }
 
 void MainWindow::windowChangedHandler(int val) {
+  if (m_sound == nullptr) {
+    return;
+  }
   m_tfView->drawTFMap(m_sound, (Window)val);
 }
