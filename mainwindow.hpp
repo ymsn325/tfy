@@ -23,17 +23,26 @@
 #include "playback.hpp"
 #include "sound.hpp"
 
+class MainWindow;
+class WaveScene : public QGraphicsScene {
+ public:
+  WaveScene(int x, int y, int w, int h, MainWindow *parent);
+  void mouseMoveEvent(QGraphicsSceneMouseEvent *e) override;
+
+ private:
+  MainWindow *m_parent;
+};
+
 class WaveView : public QGraphicsView {
  public:
-  WaveView(int x, int y, int w, int h, QWidget *parent);
+  WaveView(int x, int y, int w, int h, MainWindow *parent);
   void init();
   void drawWaveForm(Sound *sound);
 
  private:
-  QGraphicsScene *m_scene;
+  WaveScene *m_scene;
 };
 
-class MainWindow;
 class TFScene : public QGraphicsScene {
  public:
   TFScene(int x, int y, int w, int h, MainWindow *parent);
