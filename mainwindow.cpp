@@ -50,11 +50,19 @@ void WaveView::drawWaveForm(Sound *sound) {
   }
 }
 
+TFScene::TFScene(int x, int y, int w, int h, QWidget *parent)
+    : QGraphicsScene(x, y, w, h, parent) {}
+
+void TFScene::mouseMoveEvent(QGraphicsSceneMouseEvent *e) {
+  qDebug() << e->scenePos();
+}
+
 TFView::TFView(int x, int y, int w, int h, QWidget *parent)
     : QGraphicsView(parent) {
-  m_scene = new QGraphicsScene(x, y, w, h, parent);
+  m_scene = new TFScene(x, y, w, h, parent);
   m_scene->setBackgroundBrush(QColor("black"));
   m_data = new unsigned char[w * h * 3];
+  setMouseTracking(true);
   setScene(m_scene);
 }
 

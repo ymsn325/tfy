@@ -5,6 +5,7 @@
 #include <QComboBox>
 #include <QGraphicsItemGroup>
 #include <QGraphicsScene>
+#include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
 #include <QHBoxLayout>
 #include <QMainWindow>
@@ -31,6 +32,12 @@ class WaveView : public QGraphicsView {
   QGraphicsScene *m_scene;
 };
 
+class TFScene : public QGraphicsScene {
+ public:
+  TFScene(int x, int y, int w, int h, QWidget *parent);
+  void mouseMoveEvent(QGraphicsSceneMouseEvent *e) override;
+};
+
 class TFView : public QGraphicsView {
  public:
   TFView(int x, int y, int w, int h, QWidget *parent);
@@ -38,7 +45,7 @@ class TFView : public QGraphicsView {
   void drawTFMap(Sound *sound, Window windowType);
 
  private:
-  QGraphicsScene *m_scene;
+  TFScene *m_scene;
   void double2rgb(const double x, unsigned char *r, unsigned char *g,
                   unsigned char *b);
   unsigned char *m_data;
