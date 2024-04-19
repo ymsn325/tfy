@@ -10,7 +10,9 @@ class Sound {
  public:
   Sound(string fname, int nMargin = 1024);
   ~Sound();
+  int fs() { return m_fs; }
   int nSamples() { return m_nSamples; }
+  double duration() { return m_duration; }
   int nMargin() { return m_nMargin; }
   double *x() { return m_x; }
   complex<double> **spec() { return m_spec; }
