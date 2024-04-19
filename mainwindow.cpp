@@ -206,9 +206,9 @@ void MainWindow::createMenuBar() {
   m_menuBar = new QMenuBar(this);
   m_menuFile = new QMenu("&File");
   m_openAction = new QAction("&Open", this);
-  m_openAction->setShortcut(QKeySequence(QKeySequence::Open));
+  m_openAction->setShortcut(QKeySequence::Open);
   m_quitAction = new QAction("&Quit", this);
-  m_openAction->setShortcut(QKeySequence(QKeySequence::Quit));
+  m_quitAction->setShortcut(QKeySequence(Qt::CTRL | Qt::Key_Q));
   m_menuFile->addAction(m_openAction);
   m_menuFile->addSeparator();
   m_menuFile->addAction(m_quitAction);
