@@ -50,11 +50,31 @@ void WaveView::drawWaveForm(Sound *sound) {
   }
 }
 
-TFView::TFView(int x, int y, int w, int h, QWidget *parent)
+TFScene::TFScene(int x, int y, int w, int h, MainWindow *parent)
+    : QGraphicsScene(x, y, w, h, parent) {
+  m_parent = parent;
+}
+
+void TFScene::mouseMoveEvent(QGraphicsSceneMouseEvent *e) {
+  if (!m_parent->sound()) {
+    return;
+  }
+  int fs = m_parent->sound()->fs();
+  double duration = m_parent->sound()->duration();
+  int y = e->scenePos().y();
+  int x = e->scenePos().x();
+  double freq = (height() - y) / height() * fs / 2.0;
+  double time = x / width() * duration;
+  m_parent->freqLabel()->setText(QString::number(freq));
+  m_parent->timeLabel()->setText(QString::number(time));
+}
+
+TFView::TFView(int x, int y, int w, int h, MainWindow *parent)
     : QGraphicsView(parent) {
-  m_scene = new QGraphicsScene(x, y, w, h, parent);
+  m_scene = new TFScene(x, y, w, h, parent);
   m_scene->setBackgroundBrush(QColor("black"));
   m_data = new unsigned char[w * h * 3];
+  setMouseTracking(true);
   setScene(m_scene);
 }
 
@@ -136,6 +156,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_topLayout->setSpacing(0);
   m_upperLayout = new QHBoxLayout();
   m_pixmapLayout = new QVBoxLayout();
+  m_freqLabel = new QLabel("-.-", this);
+  m_HzLabel = new QLabel(" Hz", this);
+  m_timeLabel = new QLabel("-.-", this);
+  m_secLabel = new QLabel(" sec", this);
   m_tfView = new TFView(0, 0, 800, 1024, this);
   m_waveView = new WaveView(0, 0, 800, 100, this);
   m_pixmapLayout->addWidget(m_tfView);
@@ -177,6 +201,12 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_playButton = new QPushButton("Play", this);
   m_playButton->setSizePolicy(
       QSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed));
+  m_lowerLayout->addWidget(m_freqLabel);
+  m_lowerLayout->addWidget(m_HzLabel);
+  m_lowerLayout->addStretch();
+  m_lowerLayout->addWidget(m_timeLabel);
+  m_lowerLayout->addWidget(m_secLabel);
+  m_lowerLayout->addStretch();
   m_lowerLayout->addWidget(m_volSlider);
   m_lowerLayout->addWidget(m_playButton);
   connect(m_playButton, &QPushButton::clicked, this,

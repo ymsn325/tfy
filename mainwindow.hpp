@@ -5,8 +5,10 @@
 #include <QComboBox>
 #include <QGraphicsItemGroup>
 #include <QGraphicsScene>
+#include <QGraphicsSceneMouseEvent>
 #include <QGraphicsView>
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QMainWindow>
 #include <QMediaDevices>
 #include <QMenu>
@@ -31,14 +33,24 @@ class WaveView : public QGraphicsView {
   QGraphicsScene *m_scene;
 };
 
+class MainWindow;
+class TFScene : public QGraphicsScene {
+ public:
+  TFScene(int x, int y, int w, int h, MainWindow *parent);
+  void mouseMoveEvent(QGraphicsSceneMouseEvent *e) override;
+
+ private:
+  MainWindow *m_parent;
+};
+
 class TFView : public QGraphicsView {
  public:
-  TFView(int x, int y, int w, int h, QWidget *parent);
+  TFView(int x, int y, int w, int h, MainWindow *parent);
   ~TFView();
   void drawTFMap(Sound *sound, Window windowType);
 
  private:
-  QGraphicsScene *m_scene;
+  TFScene *m_scene;
   void double2rgb(const double x, unsigned char *r, unsigned char *g,
                   unsigned char *b);
   unsigned char *m_data;
@@ -50,7 +62,9 @@ class MainWindow : public QMainWindow {
  public:
   MainWindow(QWidget *parent = nullptr);
   ~MainWindow();
-  void createMenuBar();
+  QLabel *freqLabel() { return m_freqLabel; }
+  QLabel *timeLabel() { return m_timeLabel; }
+  Sound *sound() { return m_sound; }
 
  public slots:
   void openActionTriggeredHandler();
@@ -62,6 +76,7 @@ class MainWindow : public QMainWindow {
   void windowChangedHandler(int val);
 
  private:
+  void createMenuBar();
   QMenuBar *m_menuBar;
   QMenu *m_menuFile;
   QAction *m_openAction;
@@ -74,6 +89,10 @@ class MainWindow : public QMainWindow {
   QComboBox *m_windowComboBox;
   WaveView *m_waveView;
   QHBoxLayout *m_lowerLayout;
+  QLabel *m_freqLabel;
+  QLabel *m_HzLabel;
+  QLabel *m_timeLabel;
+  QLabel *m_secLabel;
   QSlider *m_volSlider;
   QPushButton *m_playButton;
   Sound *m_sound = nullptr;
