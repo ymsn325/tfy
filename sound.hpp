@@ -18,7 +18,7 @@ class Sound {
   complex<double> **spec() { return m_spec; }
   double specMax() { return m_specMax; }
   double specMin() { return m_specMin; }
-  void stft(int hopSize, Window windowType);
+  void stft(int hopSize, Window::WindowType windowType);
 
  private:
   int m_fs;

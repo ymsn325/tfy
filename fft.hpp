@@ -1,31 +1,43 @@
 #pragma once
 
+#include <QDebug>
 #include <complex>
 
 using namespace std;
 
-enum class Window { Gaussian, Hann, Hamming, Rect, NumWindow };
+class Window {
+ public:
+  enum WindowType { Gaussian, Hann, Hamming, Rect, NumWindow };
+  Window(int nFFT, int size, WindowType type);
+  ~Window() {
+    qDebug() << "Delete window.";
+    delete[] m_data;
+  }
+  double *data() { return m_data; }
+  double area() { return m_area; }
+
+ private:
+  double *m_data;
+  double m_area;
+};
 
 class FFT {
  public:
-  FFT(int nFFT, Window windowType, double fs);
+  FFT(int nFFT, Window::WindowType windowType, double fs);
   ~FFT();
   int nFFT() { return m_nFFT; }
-  double *window() { return m_window; }
+  Window *window() { return m_window; }
   void exec(double *in, complex<double> *out);
-  void setWindow(Window windowType) {
-    m_window = genWindow(windowType);
-    m_areaWindow = calcWindowArea();
+  void setWindow(Window::WindowType windowType, int windowSize) {
+    delete m_window;
+    m_window = new Window(m_nFFT, windowSize, windowType);
   }
 
  private:
   int *genBitRevTable();
-  double *genWindow(Window windowType);
-  double calcWindowArea();
   complex<double> *genCoef();
   int m_nFFT;
-  double *m_window;
-  double m_areaWindow;
+  Window *m_window;
   double m_fs;
   int *m_bitRevTable;
   complex<double> *m_coef;

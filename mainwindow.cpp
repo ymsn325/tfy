@@ -96,7 +96,7 @@ TFView::TFView(int x, int y, int w, int h, MainWindow *parent)
 
 TFView::~TFView() { delete[] m_data; }
 
-void TFView::drawTFMap(Sound *sound, Window windowType) {
+void TFView::drawTFMap(Sound *sound, Window::WindowType windowType) {
   int w = m_scene->width();
   int h = m_scene->height();
   int hopSize = sound->nSamples() / w;
@@ -183,17 +183,17 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_upperLayout->addLayout(m_pixmapLayout);
   m_windowComboBox = new QComboBox(this);
   for (int w = 0; w < (int)Window::NumWindow; w++) {
-    switch ((Window)w) {
-      case Window::Gaussian:
+    switch ((Window::WindowType)w) {
+      case Window::WindowType::Gaussian:
         m_windowComboBox->addItem("Gauusian");
         break;
-      case Window::Hann:
+      case Window::WindowType::Hann:
         m_windowComboBox->addItem("Hann");
         break;
-      case Window::Hamming:
+      case Window::WindowType::Hamming:
         m_windowComboBox->addItem("Hamming");
         break;
-      case Window::Rect:
+      case Window::WindowType::Rect:
         m_windowComboBox->addItem("Rect");
         break;
       default:
@@ -267,7 +267,8 @@ void MainWindow::openActionTriggeredHandler() {
   m_sound = new Sound(fname.toStdString());
   m_waveView->init();
   m_waveView->drawWaveForm(m_sound);
-  m_tfView->drawTFMap(m_sound, (Window)m_windowComboBox->currentIndex());
+  m_tfView->drawTFMap(m_sound,
+                      (Window::WindowType)m_windowComboBox->currentIndex());
   m_audioStream.reset(new AudioStream(m_sound));
   connect(m_audioStream.get(), &AudioStream::stopped, this,
           &MainWindow::streamStoppedHandler);
@@ -324,5 +325,5 @@ void MainWindow::windowChangedHandler(int val) {
   if (m_sound == nullptr) {
     return;
   }
-  m_tfView->drawTFMap(m_sound, (Window)val);
+  m_tfView->drawTFMap(m_sound, (Window::WindowType)val);
 }

@@ -78,7 +78,7 @@ Sound::~Sound() {
   delete m_fft;
 }
 
-void Sound::stft(int hopSize, Window windowType) {
+void Sound::stft(int hopSize, Window::WindowType windowType) {
   int nFFT = m_fft->nFFT();
   if (m_nMargin < nFFT / 2) {
     cerr << "Too short nMargin: " << m_nMargin << ", nFFT: " << nFFT << endl;
@@ -86,8 +86,8 @@ void Sound::stft(int hopSize, Window windowType) {
   }
   double *in = new double[nFFT];
   complex<double> *out = new complex<double>[nFFT];
-  m_fft->setWindow(windowType);
-  double *window = m_fft->window();
+  m_fft->setWindow(windowType, 1024);
+  Window *window = m_fft->window();
   double width = m_nSamples / hopSize;
   m_spec = new complex<double> *[int(width)];
   for (int i = 0; i < width; i++) {
@@ -98,7 +98,7 @@ void Sound::stft(int hopSize, Window windowType) {
   for (int i = 0; i < m_nSamples / hopSize; i++) {
     for (int n = -nFFT / 2; n < nFFT / 2; n++) {
       in[n + nFFT / 2] =
-          m_x[i * hopSize + m_nMargin + n] * window[n + nFFT / 2];
+          m_x[i * hopSize + m_nMargin + n] * window->data()[n + nFFT / 2];
     }
     m_fft->exec(in, out);
     for (int k = 0; k < nFFT / 2; k++) {
