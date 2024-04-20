@@ -17,7 +17,6 @@ class AudioStream : public QIODevice {
     m_pos = 0;
     close();
   }
-  void readAudioData();
   qint64 readData(char *data, qint64 maxlen) override;
   qint64 writeData(const char *data, qint64 len) override {
     Q_UNUSED(data);
@@ -28,9 +27,11 @@ class AudioStream : public QIODevice {
     return m_buf.size() + QIODevice::bytesAvailable();
   }
   qint64 size() const override { return m_buf.size(); }
+  qint64 pos() const override { return m_pos; }
   void setPos(int pos) { m_pos = pos; }
 
  private:
+  void readAudioData();
   int m_pos = 0;
   QByteArray m_buf;
   Sound *m_sound;

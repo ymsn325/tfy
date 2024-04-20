@@ -28,7 +28,7 @@ qint64 AudioStream::readData(char *data, qint64 len) {
       const qint64 chunk = qMin((m_buf.size() - m_pos), len - total);
       if (m_pos + chunk < m_buf.size()) {
         memcpy(data + total, m_buf.constData() + m_pos, chunk);
-        m_pos = (m_pos + chunk) % m_buf.size();
+        m_pos = (m_pos + chunk);
         total += chunk;
       } else {
         m_pos = 0;

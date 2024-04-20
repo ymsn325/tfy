@@ -16,6 +16,14 @@ WaveScene::WaveScene(int x, int y, int w, int h, MainWindow *parent)
   m_parent = parent;
 }
 
+void WaveScene::setCurrentStreamPosLine(double x) {
+  if (m_currentStreamPosLine) {
+    removeItem(m_currentStreamPosLine);
+    delete m_currentStreamPosLine;
+  }
+  m_currentStreamPosLine = addLine(x, 0, x, height(), QColor(Qt::gray));
+}
+
 void WaveScene::mouseMoveEvent(QGraphicsSceneMouseEvent *e) {
   if (!m_parent->sound()) {
     return;
@@ -69,6 +77,14 @@ void WaveView::drawWaveForm(Sound *sound) {
 TFScene::TFScene(int x, int y, int w, int h, MainWindow *parent)
     : QGraphicsScene(x, y, w, h, parent) {
   m_parent = parent;
+}
+
+void TFScene::setCurrentStreamPosLine(double x) {
+  if (m_currentStreamPosLine) {
+    removeItem(m_currentStreamPosLine);
+    delete m_currentStreamPosLine;
+  }
+  m_currentStreamPosLine = addLine(x, 0, x, height(), QColor(Qt::gray));
 }
 
 void TFScene::mouseMoveEvent(QGraphicsSceneMouseEvent *e) {
@@ -290,7 +306,7 @@ void MainWindow::playButtonClickedHandler() {
   if (m_playFlag == false) {
     m_playFlag = true;
     m_playButton->setText("Pause");
-    m_audioPlaybackTimer->start(10);
+    m_audioPlaybackTimer->start(1);
   } else {
     m_playFlag = false;
     m_playButton->setText("Play");
@@ -306,11 +322,21 @@ void MainWindow::streamStoppedHandler() {
 
 void MainWindow::playbackTimerTimeoutHandler() {
   int len = m_audioSink->bytesFree();
+  double linePos;
   QByteArray buf(len, 0);
+  WaveScene *waveScene = m_waveView->scene();
+  TFScene *tfScene = m_tfView->scene();
+  QGraphicsItem *line;
   len = m_audioStream->read(buf.data(), len);
   if (len) {
     m_audioIO->write(buf.data(), len);
   }
+  linePos =
+      (double)m_audioStream->pos() / m_audioStream->size() * waveScene->width();
+  waveScene->setCurrentStreamPosLine(linePos);
+  waveScene->update();
+  tfScene->setCurrentStreamPosLine(linePos);
+  tfScene->update();
 }
 
 void MainWindow::volSliderValueChangedHandler(int val) {
