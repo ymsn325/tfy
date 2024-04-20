@@ -63,7 +63,7 @@ class TFView : public QGraphicsView {
   TFView(int x, int y, int w, int h, MainWindow *parent);
   ~TFView();
   TFScene *scene() { return m_scene; }
-  void drawTFMap(Sound *sound, Window::WindowType windowType);
+  void drawTFMap(Sound *sound, Window::WindowType windowType, int windowSize);
 
  private:
   TFScene *m_scene;
@@ -89,7 +89,8 @@ class MainWindow : public QMainWindow {
   void streamStoppedHandler();
   void playbackTimerTimeoutHandler();
   void volSliderValueChangedHandler(int val);
-  void windowChangedHandler(int val);
+  void windowTypeChangedHandler(int val);
+  void windowSizeChangedHandler(int val);
 
  private:
   void createMenuBar();
@@ -102,8 +103,10 @@ class MainWindow : public QMainWindow {
   QHBoxLayout *m_upperLayout;
   QVBoxLayout *m_pixmapLayout;
   TFView *m_tfView;
-  QComboBox *m_windowComboBox;
   WaveView *m_waveView;
+  QVBoxLayout *m_tfControllLayout;
+  QComboBox *m_windowTypeComboBox;
+  QComboBox *m_windowSizeComboBox;
   QHBoxLayout *m_lowerLayout;
   QLabel *m_freqLabel;
   QLabel *m_HzLabel;
@@ -118,4 +121,6 @@ class MainWindow : public QMainWindow {
   QScopedPointer<QAudioSink> m_audioSink;
   QIODevice *m_audioIO;
   bool m_playFlag;
+  QStringList m_windowSizeList = {"2048", "1024", "512", "256",
+                                  "128",  "64",   "32"};
 };

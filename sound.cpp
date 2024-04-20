@@ -7,7 +7,7 @@
 
 using namespace std;
 
-Sound::Sound(string fname, int nMargin) {
+Sound::Sound(string fname, int nMargin, Window::WindowType windowType) {
   ifstream fin;
   char tag[4];
   int buf4;
@@ -70,7 +70,7 @@ Sound::Sound(string fname, int nMargin) {
     m_x[n] = (double)(buf2 + (SHRT_MAX + 1.0) + 0.5) / (SHRT_MAX + 1.0) - 1.0;
   }
   fin.close();
-  m_fft = new FFT(2048, Window::Gaussian, m_fs);
+  m_fft = new FFT(2048, windowType, m_fs);
 }
 
 Sound::~Sound() {
@@ -78,7 +78,7 @@ Sound::~Sound() {
   delete m_fft;
 }
 
-void Sound::stft(int hopSize, Window::WindowType windowType) {
+void Sound::stft(int hopSize, Window::WindowType windowType, int windowSize) {
   int nFFT = m_fft->nFFT();
   if (m_nMargin < nFFT / 2) {
     cerr << "Too short nMargin: " << m_nMargin << ", nFFT: " << nFFT << endl;
@@ -86,7 +86,7 @@ void Sound::stft(int hopSize, Window::WindowType windowType) {
   }
   double *in = new double[nFFT];
   complex<double> *out = new complex<double>[nFFT];
-  m_fft->setWindow(windowType, 1024);
+  m_fft->setWindow(windowType, windowSize);
   Window *window = m_fft->window();
   double width = m_nSamples / hopSize;
   m_spec = new complex<double> *[int(width)];

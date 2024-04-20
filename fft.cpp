@@ -1,6 +1,5 @@
 #include "fft.hpp"
 
-#include <QDebug>
 #include <QtMath>
 #include <iostream>
 
@@ -14,14 +13,12 @@ Window::Window(int nFFT, int size, WindowType type) {
   }
   switch (type) {
     case WindowType::Gaussian:
-      qDebug() << "Window type: Gaussian";
       for (int i = 0; i < nFFT; i++) {
         m_data[i] = exp(-pow(3.0 * (nFFT / 2.0 - i) / (size / 2.0), 2.0));
         m_area += m_data[i];
       }
       break;
     case WindowType::Hamming:
-      qDebug() << "Window type: Hamming";
       for (int i = nFFT / 2 - size / 2; i < nFFT / 2 + size / 2; i++) {
         m_data[i] =
             0.54 - 0.46 * cos(2.0 * M_PI * (i - nFFT / 2 - size / 2) / size);
@@ -29,7 +26,6 @@ Window::Window(int nFFT, int size, WindowType type) {
       }
       break;
     case WindowType::Hann:
-      qDebug() << "Window type: Hann";
       for (int i = nFFT / 2 - size / 2; i < nFFT / 2 + size / 2; i++) {
         m_data[i] =
             0.5 - 0.5 * cos(2.0 * M_PI * (i - nFFT / 2 - size / 2) / size);
@@ -37,7 +33,6 @@ Window::Window(int nFFT, int size, WindowType type) {
       }
       break;
     case WindowType::Rect:
-      qDebug() << "Window type: Rect";
       for (int i = nFFT / 2 - size / 2; i < nFFT / 2 + size / 2; i++) {
         m_data[i] = 1.0;
         m_area += m_data[i];
@@ -56,7 +51,7 @@ Window::Window(int nFFT, int size, WindowType type) {
 
 FFT::FFT(int nFFT, Window::WindowType windowType, double fs) {
   m_nFFT = nFFT;
-  m_window = new Window(nFFT, nFFT, Window::WindowType::Gaussian);
+  m_window = new Window(nFFT, nFFT, windowType);
   m_bitRevTable = genBitRevTable();
   m_coef = genCoef();
   m_fs = fs;

@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QDebug>
 #include <complex>
 
 using namespace std;
@@ -9,10 +8,7 @@ class Window {
  public:
   enum WindowType { Gaussian, Hann, Hamming, Rect, NumWindow };
   Window(int nFFT, int size, WindowType type);
-  ~Window() {
-    qDebug() << "Delete window.";
-    delete[] m_data;
-  }
+  ~Window() { delete[] m_data; }
   double *data() { return m_data; }
   double area() { return m_area; }
 
