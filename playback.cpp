@@ -1,6 +1,5 @@
 #include "playback.hpp"
 
-#include <QDebug>
 #include <QtMath>
 #include <climits>
 

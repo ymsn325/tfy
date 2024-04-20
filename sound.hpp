@@ -8,7 +8,8 @@ using namespace std;
 
 class Sound {
  public:
-  Sound(string fname, int nMargin = 1024);
+  Sound(string fname, int nMargin = 1024,
+        Window::WindowType windowType = Window::WindowType::Gaussian);
   ~Sound();
   int fs() { return m_fs; }
   int nSamples() { return m_nSamples; }
@@ -18,7 +19,7 @@ class Sound {
   complex<double> **spec() { return m_spec; }
   double specMax() { return m_specMax; }
   double specMin() { return m_specMin; }
-  void stft(int hopSize, Window windowType);
+  void stft(int hopSize, Window::WindowType windowType, int windowSize);
 
  private:
   int m_fs;
