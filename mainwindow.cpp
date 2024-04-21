@@ -150,6 +150,20 @@ void TFView::setFreqScale(FreqScale type) {
                   nFFT);
       }
       break;
+    case FreqScale::Bark:
+      for (int k = 0; k < nFFT / 2; k++) {
+        m_scaledIdx[k] =
+            (int)(bark2hz((double)k / (nFFT / 2.0) * (hz2bark(22050.0))) / fs *
+                  nFFT);
+      }
+      break;
+    case FreqScale::Mel:
+      for (int k = 0; k < nFFT / 2; k++) {
+        m_scaledIdx[k] =
+            (int)(mel2hz((double)k / (nFFT / 2.0) * (hz2mel(22050.0))) / fs *
+                  nFFT);
+      }
+      break;
     default:
       qDebug() << "Unsupported frequency scale type.";
       qDebug() << "Force set to linear.";

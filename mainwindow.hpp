@@ -77,6 +77,20 @@ class TFView : public QGraphicsView {
   double erb2hz(double erb) {
     return ((pow(10.0, erb / m_erbA) - 1.0) / 0.00437);
   }
+  double hz2bark(double hz) { return (26.81 * hz) / (1960.0 + hz) - 0.53; }
+  double bark2hz(double bark) {
+    double barkNew;
+    if (bark < 2.0) {
+      barkNew = (bark - 0.3) / 0.85;
+    } else if (bark > 20.1) {
+      barkNew = (bark + 4.422) / 1.22;
+    } else {
+      barkNew = bark;
+    }
+    return 1960.0 * (barkNew + 0.53) / (26.28 - barkNew);
+  }
+  double hz2mel(double hz) { return 2595.0 * log10(1.0 + hz / 700.0); }
+  double mel2hz(double mel) { return 700.0 * (pow(10.0, mel / 2595.0) - 1.0); }
 
  private:
   void double2rgb(const double x, unsigned char *r, unsigned char *g,
