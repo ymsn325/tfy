@@ -90,6 +90,7 @@ TFView::TFView(int x, int y, int w, int h, MainWindow *parent)
   m_data = new unsigned char[w * h * 3];
   setMouseTracking(true);
   setScene(m_scene);
+  m_erbA = 1000.0 * log(10.0) / (24.7 * 4.37);
 }
 
 TFView::~TFView() {
@@ -130,6 +131,7 @@ void TFView::drawTFMap(Window::WindowType windowType, int windowSize) {
 
 void TFView::setFreqScale(FreqScale type) {
   int nFFT = m_parentSound->fft()->nFFT();
+  int fs = m_parentSound->fs();
   switch (type) {
     case FreqScale::Linear:
       for (int k = 0; k < nFFT / 2; k++) {
@@ -139,6 +141,13 @@ void TFView::setFreqScale(FreqScale type) {
     case FreqScale::Log:
       for (int k = 0; k < nFFT / 2; k++) {
         m_scaledIdx[k] = (int)pow(nFFT / 2.0, (double)k / (nFFT / 2.0));
+      }
+      break;
+    case FreqScale::ERB:
+      for (int k = 0; k < nFFT / 2; k++) {
+        m_scaledIdx[k] =
+            (int)(erb2hz((double)k / (nFFT / 2.0) * (hz2erb(22050.0))) / fs *
+                  nFFT);
       }
       break;
     default:

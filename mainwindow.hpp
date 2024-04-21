@@ -73,11 +73,16 @@ class TFView : public QGraphicsView {
   }
   void setFlagModified() { m_flagModified = true; }
   void genFreqIdx(FreqScale scaleType);
+  double hz2erb(double hz) { return m_erbA * log10(1.0 + 0.00437 * hz); }
+  double erb2hz(double erb) {
+    return ((pow(10.0, erb / m_erbA) - 1.0) / 0.00437);
+  }
 
  private:
   void double2rgb(const double x, unsigned char *r, unsigned char *g,
                   unsigned char *b);
   unsigned char *m_data;
+  double m_erbA;
   Sound *m_parentSound;
   TFScene *m_scene;
   FreqScale m_freqScale = Linear;
