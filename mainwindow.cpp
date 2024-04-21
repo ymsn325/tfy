@@ -90,35 +90,96 @@ TFView::TFView(int x, int y, int w, int h, MainWindow *parent)
   m_data = new unsigned char[w * h * 3];
   setMouseTracking(true);
   setScene(m_scene);
+  m_erbA = 1000.0 * log(10.0) / (24.7 * 4.37);
 }
 
-TFView::~TFView() { delete[] m_data; }
+TFView::~TFView() {
+  delete[] m_data;
+  if (m_scaledIdx) {
+    delete[] m_scaledIdx;
+  }
+}
 
-void TFView::drawTFMap(Sound *sound, Window::WindowType windowType,
-                       int windowSize) {
+void TFView::drawTFMap(Window::WindowType windowType, int windowSize) {
   int w = m_scene->width();
   int h = m_scene->height();
-  int hopSize = sound->nSamples() / w;
-  sound->stft(hopSize, windowType, windowSize);
-  complex<double> **spec = sound->spec();
-  double specMax = sound->specMax();
-  double specMin = sound->specMin();
+  int hopSize = m_parentSound->nSamples() / w;
+  if (m_flagModified) {
+    m_parentSound->stft(hopSize, windowType, windowSize);
+    m_flagModified = false;
+  }
+  complex<double> **spec = m_parentSound->spec();
+  double specMax = m_parentSound->specMax();
+  double specMin = m_parentSound->specMin();
   double upper_dB, lower_dB;
   upper_dB = 20.0 * log10(specMax);
   // lower_dB = 20.0 * log10(specMin);
   lower_dB = -100.0;
-  for (int y = 0; y < h; y++) {
-    for (int x = 0; x < w; x++) {
-      double2rgb(
-          (20.0 * log10(abs(spec[x][y])) - lower_dB) / (upper_dB - lower_dB),
-          m_data + ((h - 1 - y) * w + x) * 3,       // R
-          m_data + ((h - 1 - y) * w + x) * 3 + 1,   // G
-          m_data + ((h - 1 - y) * w + x) * 3 + 2);  // B
+  for (int x = 0; x < w; x++) {
+    for (int y = 0; y < h; y++) {
+      double2rgb((20.0 * log10(abs(spec[x][m_scaledIdx[y]])) - lower_dB) /
+                     (upper_dB - lower_dB),
+                 m_data + ((h - 1 - y) * w + x) * 3,       // R
+                 m_data + ((h - 1 - y) * w + x) * 3 + 1,   // G
+                 m_data + ((h - 1 - y) * w + x) * 3 + 2);  // B
     }
   }
   QImage img(m_data, w, h, QImage::Format_RGB888);
   QPixmap pixmap = QPixmap::fromImage(img);
   m_scene->addPixmap(pixmap);
+}
+
+void TFView::setFreqScale(FreqScale type) {
+  int nFFT = m_parentSound->fft()->nFFT();
+  int fs = m_parentSound->fs();
+  switch (type) {
+    case FreqScale::Linear:
+      for (int k = 0; k < nFFT / 2; k++) {
+        m_scaledIdx[k] = k;
+      }
+      break;
+    case FreqScale::Log:
+      for (int k = 0; k < nFFT / 2; k++) {
+        m_scaledIdx[k] = (int)pow(nFFT / 2.0, (double)k / (nFFT / 2.0));
+      }
+      break;
+    case FreqScale::ERB:
+      for (int k = 0; k < nFFT / 2; k++) {
+        m_scaledIdx[k] =
+            (int)(erb2hz((double)k / (nFFT / 2.0) * (hz2erb(22050.0))) / fs *
+                  nFFT);
+      }
+      break;
+    case FreqScale::Bark:
+      for (int k = 0; k < nFFT / 2; k++) {
+        m_scaledIdx[k] =
+            (int)(bark2hz((double)k / (nFFT / 2.0) * (hz2bark(22050.0))) / fs *
+                  nFFT);
+      }
+      break;
+    case FreqScale::Mel:
+      for (int k = 0; k < nFFT / 2; k++) {
+        m_scaledIdx[k] =
+            (int)(mel2hz((double)k / (nFFT / 2.0) * (hz2mel(22050.0))) / fs *
+                  nFFT);
+      }
+      break;
+    default:
+      qDebug() << "Unsupported frequency scale type.";
+      qDebug() << "Force set to linear.";
+      for (int k = 0; k < nFFT / 2; k++) {
+        m_scaledIdx[k] = k;
+      }
+      break;
+  }
+}
+void TFView::genFreqIdx(FreqScale scaleType) {
+  if (!m_parentSound) {
+    return;
+  }
+  int nFFT = m_parentSound->fft()->nFFT();
+  m_scaledIdx = new int[nFFT / 2];
+  setFreqScale(scaleType);
 }
 
 void TFView::double2rgb(double x, unsigned char *r, unsigned char *g,
@@ -207,10 +268,35 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
           &MainWindow::windowTypeChangedHandler);
   m_windowSizeComboBox = new QComboBox(this);
   m_windowSizeComboBox->addItems(m_windowSizeList);
+  m_freqScaleComboBox = new QComboBox(this);
+  for (int i = 0; i < (int)TFView::FreqScale::NumFreqScale; i++) {
+    switch ((TFView::FreqScale)i) {
+      case TFView::FreqScale::Linear:
+        m_freqScaleComboBox->addItem("Linear");
+        break;
+      case TFView::FreqScale::Log:
+        m_freqScaleComboBox->addItem("Log");
+        break;
+      case TFView::FreqScale::ERB:
+        m_freqScaleComboBox->addItem("ERB");
+        break;
+      case TFView::FreqScale::Bark:
+        m_freqScaleComboBox->addItem("Bark");
+        break;
+      case TFView::FreqScale::Mel:
+        m_freqScaleComboBox->addItem("Mel");
+        break;
+      default:
+        break;
+    }
+  }
   m_tfControllLayout->addWidget(m_windowTypeComboBox);
   m_tfControllLayout->addWidget(m_windowSizeComboBox);
+  m_tfControllLayout->addWidget(m_freqScaleComboBox);
   connect(m_windowSizeComboBox, &QComboBox::currentIndexChanged, this,
           &MainWindow::windowSizeChangedHandler);
+  connect(m_freqScaleComboBox, &QComboBox::currentIndexChanged, this,
+          &MainWindow::freqScaleChangedHandler);
   m_tfControllLayout->addStretch(0);
   m_upperLayout->addLayout(m_tfControllLayout);
   m_lowerLayout = new QHBoxLayout();
@@ -276,8 +362,12 @@ void MainWindow::openActionTriggeredHandler() {
                       (Window::WindowType)m_windowTypeComboBox->currentIndex());
   m_waveView->init();
   m_waveView->drawWaveForm(m_sound);
+  m_tfView->setParentSound(m_sound);
+  m_tfView->genFreqIdx((TFView::FreqScale)m_freqScaleComboBox->currentIndex());
+  m_tfView->setFreqBounds(20.0, m_sound->fs() / 2.0);
+  m_tfView->setFlagModified();
   m_tfView->drawTFMap(
-      m_sound, (Window::WindowType)m_windowTypeComboBox->currentIndex(),
+      (Window::WindowType)m_windowTypeComboBox->currentIndex(),
       m_windowSizeList[m_windowSizeComboBox->currentIndex()].toInt());
   m_audioStream.reset(new AudioStream(m_sound));
   connect(m_audioStream.get(), &AudioStream::stopped, this,
@@ -335,8 +425,9 @@ void MainWindow::windowTypeChangedHandler(int val) {
   if (m_sound == nullptr) {
     return;
   }
+  m_tfView->setFlagModified();
   m_tfView->drawTFMap(
-      m_sound, (Window::WindowType)val,
+      (Window::WindowType)val,
       m_windowSizeList[m_windowSizeComboBox->currentIndex()].toInt());
 }
 
@@ -344,7 +435,18 @@ void MainWindow::windowSizeChangedHandler(int val) {
   if (m_sound == nullptr) {
     return;
   }
-  m_tfView->drawTFMap(m_sound,
-                      (Window::WindowType)m_windowTypeComboBox->currentIndex(),
+  m_tfView->setFlagModified();
+  m_tfView->drawTFMap((Window::WindowType)m_windowTypeComboBox->currentIndex(),
                       m_windowSizeList[val].toInt());
+}
+
+void MainWindow::freqScaleChangedHandler(int val) {
+  if (m_sound == nullptr) {
+    return;
+  }
+  qDebug() << "freqScale changed: " << val;
+  m_tfView->setFreqScale((TFView::FreqScale)val);
+  m_tfView->drawTFMap(
+      (Window::WindowType)val,
+      m_windowSizeList[m_windowSizeComboBox->currentIndex()].toInt());
 }

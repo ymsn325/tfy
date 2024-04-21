@@ -60,16 +60,50 @@ class TFScene : public QGraphicsScene {
 
 class TFView : public QGraphicsView {
  public:
+  enum FreqScale { Linear, Log, ERB, Bark, Mel, NumFreqScale };
   TFView(int x, int y, int w, int h, MainWindow *parent);
   ~TFView();
   TFScene *scene() { return m_scene; }
-  void drawTFMap(Sound *sound, Window::WindowType windowType, int windowSize);
+  void setParentSound(Sound *sound) { m_parentSound = sound; }
+  void drawTFMap(Window::WindowType windowType, int windowSize);
+  void setFreqScale(FreqScale type);
+  void setFreqBounds(double lo, double hi) {
+    m_freqLo = lo;
+    m_freqHi = hi;
+  }
+  void setFlagModified() { m_flagModified = true; }
+  void genFreqIdx(FreqScale scaleType);
+  double hz2erb(double hz) { return m_erbA * log10(1.0 + 0.00437 * hz); }
+  double erb2hz(double erb) {
+    return ((pow(10.0, erb / m_erbA) - 1.0) / 0.00437);
+  }
+  double hz2bark(double hz) { return (26.81 * hz) / (1960.0 + hz) - 0.53; }
+  double bark2hz(double bark) {
+    double barkNew;
+    if (bark < 2.0) {
+      barkNew = (bark - 0.3) / 0.85;
+    } else if (bark > 20.1) {
+      barkNew = (bark + 4.422) / 1.22;
+    } else {
+      barkNew = bark;
+    }
+    return 1960.0 * (barkNew + 0.53) / (26.28 - barkNew);
+  }
+  double hz2mel(double hz) { return 2595.0 * log10(1.0 + hz / 700.0); }
+  double mel2hz(double mel) { return 700.0 * (pow(10.0, mel / 2595.0) - 1.0); }
 
  private:
-  TFScene *m_scene;
   void double2rgb(const double x, unsigned char *r, unsigned char *g,
                   unsigned char *b);
   unsigned char *m_data;
+  double m_erbA;
+  Sound *m_parentSound;
+  TFScene *m_scene;
+  FreqScale m_freqScale = Linear;
+  int *m_scaledIdx = nullptr;
+  bool m_flagModified;
+  double m_freqLo;
+  double m_freqHi;
 };
 
 class MainWindow : public QMainWindow {
@@ -91,6 +125,7 @@ class MainWindow : public QMainWindow {
   void volSliderValueChangedHandler(int val);
   void windowTypeChangedHandler(int val);
   void windowSizeChangedHandler(int val);
+  void freqScaleChangedHandler(int val);
 
  private:
   void createMenuBar();
@@ -107,6 +142,7 @@ class MainWindow : public QMainWindow {
   QVBoxLayout *m_tfControllLayout;
   QComboBox *m_windowTypeComboBox;
   QComboBox *m_windowSizeComboBox;
+  QComboBox *m_freqScaleComboBox;
   QHBoxLayout *m_lowerLayout;
   QLabel *m_freqLabel;
   QLabel *m_HzLabel;
