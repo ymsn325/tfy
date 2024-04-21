@@ -61,8 +61,7 @@ class TFScene : public QGraphicsScene {
 class TFView : public QGraphicsView {
  public:
   enum FreqScale { Linear, Log, ERB, Bark, Mel, NumFreqScale };
-  TFView(int x, int y, int w, int h, MainWindow *parent,
-         Sound *parentSound = nullptr);
+  TFView(int x, int y, int w, int h, MainWindow *parent);
   ~TFView();
   TFScene *scene() { return m_scene; }
   void setParentSound(Sound *sound) { m_parentSound = sound; }
@@ -72,6 +71,8 @@ class TFView : public QGraphicsView {
     m_freqLo = lo;
     m_freqHi = hi;
   }
+  void setFlagModified() { m_flagModified = true; }
+  void genFreqIdx(FreqScale scaleType);
 
  private:
   void double2rgb(const double x, unsigned char *r, unsigned char *g,
@@ -80,6 +81,8 @@ class TFView : public QGraphicsView {
   Sound *m_parentSound;
   TFScene *m_scene;
   FreqScale m_freqScale = Linear;
+  int *m_scaledIdx = nullptr;
+  bool m_flagModified;
   double m_freqLo;
   double m_freqHi;
 };
