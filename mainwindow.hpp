@@ -60,16 +60,22 @@ class TFScene : public QGraphicsScene {
 
 class TFView : public QGraphicsView {
  public:
-  TFView(int x, int y, int w, int h, MainWindow *parent);
+  enum FreqScale { Linear, Log, ERB, Bark, Mel, NumFreqScale };
+  TFView(int x, int y, int w, int h, MainWindow *parent,
+         Sound *parentSound = nullptr);
   ~TFView();
   TFScene *scene() { return m_scene; }
-  void drawTFMap(Sound *sound, Window::WindowType windowType, int windowSize);
+  void setParentSound(Sound *sound) { m_parentSound = sound; }
+  void drawTFMap(Window::WindowType windowType, int windowSize);
+  void setFreqScale(FreqScale type);
 
  private:
-  TFScene *m_scene;
   void double2rgb(const double x, unsigned char *r, unsigned char *g,
                   unsigned char *b);
   unsigned char *m_data;
+  Sound *m_parentSound;
+  TFScene *m_scene;
+  FreqScale m_freqScale = Linear;
 };
 
 class MainWindow : public QMainWindow {
@@ -91,6 +97,7 @@ class MainWindow : public QMainWindow {
   void volSliderValueChangedHandler(int val);
   void windowTypeChangedHandler(int val);
   void windowSizeChangedHandler(int val);
+  void freqScaleChangedHandler(int val);
 
  private:
   void createMenuBar();
@@ -107,6 +114,7 @@ class MainWindow : public QMainWindow {
   QVBoxLayout *m_tfControllLayout;
   QComboBox *m_windowTypeComboBox;
   QComboBox *m_windowSizeComboBox;
+  QComboBox *m_freqScaleComboBox;
   QHBoxLayout *m_lowerLayout;
   QLabel *m_freqLabel;
   QLabel *m_HzLabel;
