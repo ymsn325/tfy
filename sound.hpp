@@ -16,6 +16,7 @@ class Sound {
   double duration() { return m_duration; }
   int nMargin() { return m_nMargin; }
   double *x() { return m_x; }
+  FFT *fft() { return m_fft; }
   complex<double> **spec() { return m_spec; }
   double specMax() { return m_specMax; }
   double specMin() { return m_specMin; }

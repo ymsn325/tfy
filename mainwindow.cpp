@@ -108,8 +108,8 @@ void TFView::drawTFMap(Window::WindowType windowType, int windowSize) {
   upper_dB = 20.0 * log10(specMax);
   // lower_dB = 20.0 * log10(specMin);
   lower_dB = -100.0;
-  for (int y = 0; y < h; y++) {
-    for (int x = 0; x < w; x++) {
+  for (int x = 0; x < w; x++) {
+    for (int y = 0; y < h; y++) {
       double2rgb(
           (20.0 * log10(abs(spec[x][y])) - lower_dB) / (upper_dB - lower_dB),
           m_data + ((h - 1 - y) * w + x) * 3,       // R
@@ -126,15 +126,19 @@ void TFView::setFreqScale(FreqScale type) {
   int w = m_scene->width();
   int h = m_scene->height();
   complex<double> **spec = m_parentSound->spec();
+  int fs = m_parentSound->fs();
+  int nFFT = m_parentSound->fft()->nFFT();
   double specMax = m_parentSound->specMax();
   double specMin = m_parentSound->specMin();
   double upper_dB, lower_dB;
+  int kLo = m_freqLo / fs * nFFT;
+  int kHi = m_freqHi / fs * nFFT;
   upper_dB = 20.0 * log10(specMax);
   lower_dB = -100.0;
   switch (type) {
     case Linear:
-      for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
+      for (int x = 0; x < w; x++) {
+        for (int y = 0; y < h; y++) {
           double2rgb((20.0 * log10(abs(spec[x][y])) - lower_dB) /
                          (upper_dB - lower_dB),
                      m_data + ((h - 1 - y) * w + x) * 3,       // R
@@ -144,11 +148,16 @@ void TFView::setFreqScale(FreqScale type) {
       }
       break;
     case Log:
-      for (int y = 0; y < h; y++) {
-        for (int x = 0; x < w; x++) {
-          double2rgb((20.0 * log10(abs(spec[x][(int)pow(h, (double)y / h)])) -
-                      lower_dB) /
-                         (upper_dB - lower_dB),
+      for (int x = 0; x < w; x++) {
+        for (int y = 0; y < h; y++) {
+          int lowerIdx = pow(h, (double)y / h) - 1.0;
+          int upperIdx = pow(h, (double)(y + 1.0) / h) - 1.0;
+          double sum = 0.0;
+          for (int k = lowerIdx; k <= upperIdx; k++) {
+            sum += abs(spec[x][k]);
+          }
+          double ave = sum / (upperIdx - lowerIdx + 1);
+          double2rgb((20.0 * log10(ave) - lower_dB) / (upper_dB - lower_dB),
                      m_data + ((h - 1 - y) * w + x) * 3,       // R
                      m_data + ((h - 1 - y) * w + x) * 3 + 1,   // G
                      m_data + ((h - 1 - y) * w + x) * 3 + 2);  // B
@@ -353,6 +362,7 @@ void MainWindow::openActionTriggeredHandler() {
   m_waveView->init();
   m_waveView->drawWaveForm(m_sound);
   m_tfView->setParentSound(m_sound);
+  m_tfView->setFreqBounds(20.0, m_sound->fs() / 2.0);
   m_tfView->drawTFMap(
       (Window::WindowType)m_windowTypeComboBox->currentIndex(),
       m_windowSizeList[m_windowSizeComboBox->currentIndex()].toInt());

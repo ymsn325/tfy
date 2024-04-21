@@ -68,6 +68,10 @@ class TFView : public QGraphicsView {
   void setParentSound(Sound *sound) { m_parentSound = sound; }
   void drawTFMap(Window::WindowType windowType, int windowSize);
   void setFreqScale(FreqScale type);
+  void setFreqBounds(double lo, double hi) {
+    m_freqLo = lo;
+    m_freqHi = hi;
+  }
 
  private:
   void double2rgb(const double x, unsigned char *r, unsigned char *g,
@@ -76,6 +80,8 @@ class TFView : public QGraphicsView {
   Sound *m_parentSound;
   TFScene *m_scene;
   FreqScale m_freqScale = Linear;
+  double m_freqLo;
+  double m_freqHi;
 };
 
 class MainWindow : public QMainWindow {
