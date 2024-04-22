@@ -69,6 +69,15 @@ TFScene::TFScene(int x, int y, int w, int h, MainWindow *parent)
   m_parent = parent;
 }
 
+TFScene::~TFScene() {
+  if (m_currentStreamPosLine) {
+    delete m_currentStreamPosLine;
+  }
+  if (m_ticks) {
+    delete m_ticks;
+  }
+}
+
 void TFScene::mouseMoveEvent(QGraphicsSceneMouseEvent *e) {
   if (!m_parent->sound()) {
     return;
@@ -81,6 +90,60 @@ void TFScene::mouseMoveEvent(QGraphicsSceneMouseEvent *e) {
   double time = x / width() * duration;
   m_parent->freqLabel()->setText(QString::number(freq));
   m_parent->timeLabel()->setText(QString::number(time));
+}
+
+void TFScene::drawFreqTicks(TFView::FreqScale freqScale) {
+  if (m_ticks) {
+    removeItem(m_ticks);
+    delete m_ticks;
+  }
+  m_ticks = new QGraphicsItemGroup();
+  int fs = m_parent->sound()->fs();
+  int nFFT = m_parent->sound()->fft()->nFFT();
+  int h = height();
+  double fCur = 1.0;
+  double fStep;
+  double yPos;
+  switch (freqScale) {
+    case TFView::FreqScale::Linear:
+      for (double f = 0; f < fs / 2.0; f += 1000.0) {
+        yPos = h - f / (fs / 2.0) * h;
+        if (!((int)f % 5000)) {
+          m_ticks->addToGroup(addLine(0, yPos, 10.0, yPos, QColor(Qt::gray)));
+          QGraphicsTextItem *text = addText(QString::number(f));
+          text->setDefaultTextColor(QColor(Qt::gray));
+          text->setPos(10.0, yPos);
+          m_ticks->addToGroup(text);
+        } else {
+          m_ticks->addToGroup(addLine(0, yPos, 5.0, yPos, QColor(Qt::gray)));
+        }
+      }
+      break;
+    case TFView::FreqScale::Log:
+      for (int i = 0; i < log10((double)fs / 2.0); i++) {
+        for (int j = 1; j < 10; j++) {
+          double f = j * pow(10.0, i);
+          if (f > fs / 2.0) {
+            break;
+          }
+          double kLinear = f / fs * nFFT;
+          double kLog = log(kLinear + 1) / log(nFFT / 2.0);
+          yPos = h - kLog * h;
+          if (j == 1) {
+            m_ticks->addToGroup(addLine(0, yPos, 10.0, yPos, QColor(Qt::gray)));
+            QGraphicsTextItem *text = addText(QString::number(f));
+            text->setDefaultTextColor(QColor(Qt::gray));
+            text->setPos(10.0, yPos);
+          } else {
+            m_ticks->addToGroup(addLine(0, yPos, 5.0, yPos, QColor(Qt::gray)));
+          }
+        }
+      }
+      break;
+    default:
+      break;
+  }
+  addItem(m_ticks);
 }
 
 TFView::TFView(int x, int y, int w, int h, MainWindow *parent)
@@ -127,11 +190,13 @@ void TFView::drawTFMap(Window::WindowType windowType, int windowSize) {
   QImage img(m_data, w, h, QImage::Format_RGB888);
   QPixmap pixmap = QPixmap::fromImage(img);
   m_scene->addPixmap(pixmap);
+  m_scene->drawFreqTicks(m_freqScale);
 }
 
 void TFView::setFreqScale(FreqScale type) {
   int nFFT = m_parentSound->fft()->nFFT();
   int fs = m_parentSound->fs();
+  m_freqScale = type;
   switch (type) {
     case FreqScale::Linear:
       for (int k = 0; k < nFFT / 2; k++) {
@@ -172,6 +237,7 @@ void TFView::setFreqScale(FreqScale type) {
       }
       break;
   }
+  m_scene->drawFreqTicks(type);
 }
 void TFView::genFreqIdx(FreqScale scaleType) {
   if (!m_parentSound) {
@@ -444,7 +510,6 @@ void MainWindow::freqScaleChangedHandler(int val) {
   if (m_sound == nullptr) {
     return;
   }
-  qDebug() << "freqScale changed: " << val;
   m_tfView->setFreqScale((TFView::FreqScale)val);
   m_tfView->drawTFMap(
       (Window::WindowType)val,

@@ -47,17 +47,7 @@ class WaveView : public QGraphicsView {
   WaveScene *m_scene;
 };
 
-class TFScene : public QGraphicsScene {
- public:
-  TFScene(int x, int y, int w, int h, MainWindow *parent);
-  void setCurrentStreamPosLine(double x);
-  void mouseMoveEvent(QGraphicsSceneMouseEvent *e) override;
-
- private:
-  MainWindow *m_parent;
-  QGraphicsItem *m_currentStreamPosLine = nullptr;
-};
-
+class TFScene;
 class TFView : public QGraphicsView {
  public:
   enum FreqScale { Linear, Log, ERB, Bark, Mel, NumFreqScale };
@@ -104,6 +94,20 @@ class TFView : public QGraphicsView {
   bool m_flagModified;
   double m_freqLo;
   double m_freqHi;
+};
+
+class TFScene : public QGraphicsScene {
+ public:
+  TFScene(int x, int y, int w, int h, MainWindow *parent);
+  ~TFScene();
+  void setCurrentStreamPosLine(double x);
+  void mouseMoveEvent(QGraphicsSceneMouseEvent *e) override;
+  void drawFreqTicks(TFView::FreqScale freqScale);
+
+ private:
+  MainWindow *m_parent;
+  QGraphicsItem *m_currentStreamPosLine = nullptr;
+  QGraphicsItemGroup *m_ticks = nullptr;
 };
 
 class MainWindow : public QMainWindow {
