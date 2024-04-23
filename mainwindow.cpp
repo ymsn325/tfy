@@ -104,9 +104,12 @@ void TFScene::drawFreqTicks(TFView::FreqScale freqScale) {
   double fCur = 1.0;
   double fStep;
   double yPos;
+  static double erbHi = TFView::hz2erb(fs / 2.0);
+  static double cbrHi = TFView::hz2bark(fs / 2.0);
+  static double mHi = TFView::hz2mel(fs / 2.0);
   switch (freqScale) {
     case TFView::FreqScale::Linear:
-      for (double f = 0; f < fs / 2.0; f += 1000.0) {
+      for (double f = 0; f < fs / 2.0; f += 100.0) {
         yPos = h - f / (fs / 2.0) * h;
         if (!((int)f % 5000)) {
           m_ticks->addToGroup(addLine(0, yPos, 10.0, yPos, QColor(Qt::gray)));
@@ -114,8 +117,10 @@ void TFScene::drawFreqTicks(TFView::FreqScale freqScale) {
           text->setDefaultTextColor(QColor(Qt::gray));
           text->setPos(10.0, yPos);
           m_ticks->addToGroup(text);
-        } else {
+        } else if (!(int)f % 1000) {
           m_ticks->addToGroup(addLine(0, yPos, 5.0, yPos, QColor(Qt::gray)));
+        } else {
+          m_ticks->addToGroup(addLine(0, yPos, 2.0, yPos, QColor(Qt::gray)));
         }
       }
       break;
@@ -140,6 +145,66 @@ void TFScene::drawFreqTicks(TFView::FreqScale freqScale) {
         }
       }
       break;
+    case TFView::FreqScale::ERB:
+      for (int i = 0; i < log10((double)fs / 2.0); i++) {
+        for (int j = 1; j < 10; j++) {
+          double f = j * pow(10.0, i);
+          if (f > fs / 2.0) {
+            break;
+          }
+          double erbs = TFView::hz2erb(f);
+          yPos = h - erbs / erbHi * h;
+          if (j == 1) {
+            m_ticks->addToGroup(addLine(0, yPos, 10.0, yPos, QColor(Qt::gray)));
+            QGraphicsTextItem *text = addText(QString::number(f));
+            text->setDefaultTextColor(QColor(Qt::gray));
+            text->setPos(10.0, yPos);
+          } else {
+            m_ticks->addToGroup(addLine(0, yPos, 5.0, yPos, QColor(Qt::gray)));
+          }
+        }
+      }
+      break;
+    case TFView::FreqScale::Bark:
+      for (int i = 0; i < log10((double)fs / 2.0); i++) {
+        for (int j = 1; j < 10; j++) {
+          double f = j * pow(10.0, i);
+          if (f > fs / 2.0) {
+            break;
+          }
+          double cbr = TFView::hz2bark(f);
+          yPos = h - cbr / cbrHi * h;
+          if (j == 1) {
+            m_ticks->addToGroup(addLine(0, yPos, 10.0, yPos, QColor(Qt::gray)));
+            QGraphicsTextItem *text = addText(QString::number(f));
+            text->setDefaultTextColor(QColor(Qt::gray));
+            text->setPos(10.0, yPos);
+          } else {
+            m_ticks->addToGroup(addLine(0, yPos, 5.0, yPos, QColor(Qt::gray)));
+          }
+        }
+      }
+      break;
+    case TFView::FreqScale::Mel:
+      for (int i = 0; i < log10((double)fs / 2.0); i++) {
+        for (int j = 1; j < 10; j++) {
+          double f = j * pow(10.0, i);
+          if (f > fs / 2.0) {
+            break;
+          }
+          double m = TFView::hz2mel(f);
+          yPos = h - m / mHi * h;
+          if (j == 1) {
+            m_ticks->addToGroup(addLine(0, yPos, 10.0, yPos, QColor(Qt::gray)));
+            QGraphicsTextItem *text = addText(QString::number(f));
+            text->setDefaultTextColor(QColor(Qt::gray));
+            text->setPos(10.0, yPos);
+          } else {
+            m_ticks->addToGroup(addLine(0, yPos, 5.0, yPos, QColor(Qt::gray)));
+          }
+        }
+      }
+      break;
     default:
       break;
   }
@@ -153,7 +218,6 @@ TFView::TFView(int x, int y, int w, int h, MainWindow *parent)
   m_data = new unsigned char[w * h * 3];
   setMouseTracking(true);
   setScene(m_scene);
-  m_erbA = 1000.0 * log(10.0) / (24.7 * 4.37);
 }
 
 TFView::~TFView() {
@@ -177,7 +241,7 @@ void TFView::drawTFMap(Window::WindowType windowType, int windowSize) {
   double upper_dB, lower_dB;
   upper_dB = 20.0 * log10(specMax);
   // lower_dB = 20.0 * log10(specMin);
-  lower_dB = -100.0;
+  lower_dB = -120.0;
   for (int x = 0; x < w; x++) {
     for (int y = 0; y < h; y++) {
       double2rgb((20.0 * log10(abs(spec[x][m_scaledIdx[y]])) - lower_dB) /
@@ -302,8 +366,8 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_HzLabel = new QLabel(" Hz", this);
   m_timeLabel = new QLabel("-.-", this);
   m_secLabel = new QLabel(" sec", this);
-  m_tfView = new TFView(0, 0, 800, 1024, this);
-  m_waveView = new WaveView(0, 0, 800, 100, this);
+  m_tfView = new TFView(0, 0, 1200, 1024, this);
+  m_waveView = new WaveView(0, 0, 1200, 100, this);
   m_pixmapLayout->addWidget(m_tfView);
   m_pixmapLayout->addWidget(m_waveView);
   m_upperLayout->addLayout(m_pixmapLayout);
