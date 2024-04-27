@@ -67,42 +67,186 @@ void WaveView::drawWaveForm(Sound *sound) {
 TFScene::TFScene(int x, int y, int w, int h, MainWindow *parent)
     : QGraphicsScene(x, y, w, h, parent) {
   m_parent = parent;
+  setBackgroundBrush(QColor(Qt::black));
+  m_data = new unsigned char[w * h * 3];
+}
+
+TFScene::~TFScene() {
+  if (m_currentStreamPosLine) {
+    delete m_currentStreamPosLine;
+  }
+  if (m_ticks) {
+    delete m_ticks;
+  }
+  delete[] m_data;
 }
 
 void TFScene::mouseMoveEvent(QGraphicsSceneMouseEvent *e) {
-  if (!m_parent->sound()) {
+  if (!m_parentSound) {
     return;
   }
-  int fs = m_parent->sound()->fs();
-  double duration = m_parent->sound()->duration();
-  int y = e->scenePos().y();
-  int x = e->scenePos().x();
+  double fs = m_parentSound->fs();
+  double duration = m_parentSound->duration();
+  double y = e->scenePos().y();
+  double x = e->scenePos().x();
+  double h = height();
+  double w = width();
   double freq = (height() - y) / height() * fs / 2.0;
-  double time = x / width() * duration;
+  double time = x / w * duration;
+  double erbHi = hz2erb(fs / 2.0);
+  double barkHi = hz2bark(fs / 2.0);
+  double melHi = hz2mel(fs / 2.0);
+  switch (m_freqScale) {
+    case Linear:
+      freq = (h - y) / h * fs / 2.0;
+      break;
+    case Log:
+      freq = (pow(h, (h - y) / h) - 1.0) / h * fs / 2.0;
+      break;
+    case ERB:
+      freq = erb2hz((h - y) / h * erbHi);
+      break;
+    case Bark:
+      freq = bark2hz((h - y) / h * barkHi);
+      break;
+    case Mel:
+      freq = mel2hz((h - y) / h * melHi);
+      break;
+    default:
+      break;
+  }
   m_parent->freqLabel()->setText(QString::number(freq));
   m_parent->timeLabel()->setText(QString::number(time));
 }
 
-TFView::TFView(int x, int y, int w, int h, MainWindow *parent)
-    : QGraphicsView(parent) {
-  m_scene = new TFScene(x, y, w, h, parent);
-  m_scene->setBackgroundBrush(QColor("black"));
-  m_data = new unsigned char[w * h * 3];
-  setMouseTracking(true);
-  setScene(m_scene);
-  m_erbA = 1000.0 * log(10.0) / (24.7 * 4.37);
-}
-
-TFView::~TFView() {
-  delete[] m_data;
-  if (m_scaledIdx) {
-    delete[] m_scaledIdx;
+void TFScene::drawFreqTicks() {
+  if (m_ticks) {
+    removeItem(m_ticks);
+    delete m_ticks;
   }
+  m_ticks = new QGraphicsItemGroup();
+  int fs = m_parentSound->fs();
+  int nFFT = m_parentSound->fft()->nFFT();
+  int h = height();
+  double fCur = 1.0;
+  double fStep;
+  double yPos;
+  static double erbHi = hz2erb(fs / 2.0);
+  static double cbrHi = hz2bark(fs / 2.0);
+  static double mHi = hz2mel(fs / 2.0);
+  switch (m_freqScale) {
+    case Linear:
+      for (double f = 0; f < fs / 2.0; f += 100.0) {
+        yPos = h - f / (fs / 2.0) * h;
+        if (!((int)f % 5000)) {
+          m_ticks->addToGroup(addLine(0, yPos, 10.0, yPos, QColor(Qt::gray)));
+          QGraphicsTextItem *text = addText(QString::number(f));
+          text->setDefaultTextColor(QColor(Qt::gray));
+          text->setPos(10.0, yPos);
+          m_ticks->addToGroup(text);
+        } else if (!(int)f % 1000) {
+          m_ticks->addToGroup(addLine(0, yPos, 5.0, yPos, QColor(Qt::gray)));
+        } else {
+          m_ticks->addToGroup(addLine(0, yPos, 2.0, yPos, QColor(Qt::gray)));
+        }
+      }
+      break;
+    case Log:
+      for (int i = 0; i < log10((double)fs / 2.0); i++) {
+        for (int j = 1; j < 10; j++) {
+          double f = j * pow(10.0, i);
+          if (f > fs / 2.0) {
+            break;
+          }
+          double kLinear = f / fs * nFFT;
+          double kLog = log(kLinear + 1) / log(nFFT / 2.0);
+          yPos = h - kLog * h;
+          if (j == 1) {
+            m_ticks->addToGroup(addLine(0, yPos, 10.0, yPos, QColor(Qt::gray)));
+            QGraphicsTextItem *text = addText(QString::number(f));
+            text->setDefaultTextColor(QColor(Qt::gray));
+            text->setPos(10.0, yPos);
+          } else {
+            m_ticks->addToGroup(addLine(0, yPos, 5.0, yPos, QColor(Qt::gray)));
+          }
+        }
+      }
+      break;
+    case ERB:
+      for (int i = 0; i < log10((double)fs / 2.0); i++) {
+        for (int j = 1; j < 10; j++) {
+          double f = j * pow(10.0, i);
+          if (f > fs / 2.0) {
+            break;
+          }
+          double erbs = hz2erb(f);
+          yPos = h - erbs / erbHi * h;
+          if (j == 1) {
+            m_ticks->addToGroup(addLine(0, yPos, 10.0, yPos, QColor(Qt::gray)));
+            QGraphicsTextItem *text = addText(QString::number(f));
+            text->setDefaultTextColor(QColor(Qt::gray));
+            text->setPos(10.0, yPos);
+          } else {
+            m_ticks->addToGroup(addLine(0, yPos, 5.0, yPos, QColor(Qt::gray)));
+          }
+        }
+      }
+      break;
+    case Bark:
+      for (int i = 0; i < log10((double)fs / 2.0); i++) {
+        for (int j = 1; j < 10; j++) {
+          double f = j * pow(10.0, i);
+          if (f > fs / 2.0) {
+            break;
+          }
+          double cbr = hz2bark(f);
+          yPos = h - cbr / cbrHi * h;
+          if (j == 1) {
+            m_ticks->addToGroup(addLine(0, yPos, 10.0, yPos, QColor(Qt::gray)));
+            QGraphicsTextItem *text = addText(QString::number(f));
+            text->setDefaultTextColor(QColor(Qt::gray));
+            text->setPos(10.0, yPos);
+          } else {
+            m_ticks->addToGroup(addLine(0, yPos, 5.0, yPos, QColor(Qt::gray)));
+          }
+        }
+      }
+      break;
+    case Mel:
+      for (int i = 0; i < log10((double)fs / 2.0); i++) {
+        for (int j = 1; j < 10; j++) {
+          double f = j * pow(10.0, i);
+          if (f > fs / 2.0) {
+            break;
+          }
+          double m = hz2mel(f);
+          yPos = h - m / mHi * h;
+          if (j == 1) {
+            m_ticks->addToGroup(addLine(0, yPos, 10.0, yPos, QColor(Qt::gray)));
+            QGraphicsTextItem *text = addText(QString::number(f));
+            text->setDefaultTextColor(QColor(Qt::gray));
+            text->setPos(10.0, yPos);
+          } else {
+            m_ticks->addToGroup(addLine(0, yPos, 5.0, yPos, QColor(Qt::gray)));
+          }
+        }
+      }
+      break;
+    default:
+      break;
+  }
+  addItem(m_ticks);
 }
 
-void TFView::drawTFMap(Window::WindowType windowType, int windowSize) {
-  int w = m_scene->width();
-  int h = m_scene->height();
+TFView::TFView(QWidget *parent) : QGraphicsView(parent) {
+  setMouseTracking(true);
+}
+
+TFView::~TFView() {}
+
+void TFScene::drawTFMap(Window::WindowType windowType, int windowSize) {
+  int w = width();
+  int h = height();
   int hopSize = m_parentSound->nSamples() / w;
   if (m_flagModified) {
     m_parentSound->stft(hopSize, windowType, windowSize);
@@ -114,7 +258,7 @@ void TFView::drawTFMap(Window::WindowType windowType, int windowSize) {
   double upper_dB, lower_dB;
   upper_dB = 20.0 * log10(specMax);
   // lower_dB = 20.0 * log10(specMin);
-  lower_dB = -100.0;
+  lower_dB = -120.0;
   for (int x = 0; x < w; x++) {
     for (int y = 0; y < h; y++) {
       double2rgb((20.0 * log10(abs(spec[x][m_scaledIdx[y]])) - lower_dB) /
@@ -126,12 +270,17 @@ void TFView::drawTFMap(Window::WindowType windowType, int windowSize) {
   }
   QImage img(m_data, w, h, QImage::Format_RGB888);
   QPixmap pixmap = QPixmap::fromImage(img);
-  m_scene->addPixmap(pixmap);
+  addPixmap(pixmap);
+  drawFreqTicks();
 }
 
-void TFView::setFreqScale(FreqScale type) {
+void TFScene::setFreqScale(FreqScale type) {
+  if (!m_parentSound) {
+    return;
+  }
   int nFFT = m_parentSound->fft()->nFFT();
   int fs = m_parentSound->fs();
+  m_freqScale = type;
   switch (type) {
     case FreqScale::Linear:
       for (int k = 0; k < nFFT / 2; k++) {
@@ -140,7 +289,7 @@ void TFView::setFreqScale(FreqScale type) {
       break;
     case FreqScale::Log:
       for (int k = 0; k < nFFT / 2; k++) {
-        m_scaledIdx[k] = (int)pow(nFFT / 2.0, (double)k / (nFFT / 2.0));
+        m_scaledIdx[k] = (int)(pow(nFFT / 2.0, (double)k / (nFFT / 2.0)) - 1.0);
       }
       break;
     case FreqScale::ERB:
@@ -172,8 +321,10 @@ void TFView::setFreqScale(FreqScale type) {
       }
       break;
   }
+  drawFreqTicks();
 }
-void TFView::genFreqIdx(FreqScale scaleType) {
+
+void TFScene::genFreqIdx(FreqScale scaleType) {
   if (!m_parentSound) {
     return;
   }
@@ -182,8 +333,8 @@ void TFView::genFreqIdx(FreqScale scaleType) {
   setFreqScale(scaleType);
 }
 
-void TFView::double2rgb(double x, unsigned char *r, unsigned char *g,
-                        unsigned char *b) {
+void TFScene::double2rgb(double x, unsigned char *r, unsigned char *g,
+                         unsigned char *b) {
   if (x > 1.0) {
     x = 1.0;
   }
@@ -236,8 +387,10 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_HzLabel = new QLabel(" Hz", this);
   m_timeLabel = new QLabel("-.-", this);
   m_secLabel = new QLabel(" sec", this);
-  m_tfView = new TFView(0, 0, 800, 1024, this);
-  m_waveView = new WaveView(0, 0, 800, 100, this);
+  m_tfView = new TFView(this);
+  m_tfScene = new TFScene(0, 0, 1200, 1024, this);
+  m_tfView->setScene(m_tfScene);
+  m_waveView = new WaveView(0, 0, 1200, 100, this);
   m_pixmapLayout->addWidget(m_tfView);
   m_pixmapLayout->addWidget(m_waveView);
   m_upperLayout->addLayout(m_pixmapLayout);
@@ -269,21 +422,21 @@ MainWindow::MainWindow(QWidget *parent) : QMainWindow(parent) {
   m_windowSizeComboBox = new QComboBox(this);
   m_windowSizeComboBox->addItems(m_windowSizeList);
   m_freqScaleComboBox = new QComboBox(this);
-  for (int i = 0; i < (int)TFView::FreqScale::NumFreqScale; i++) {
-    switch ((TFView::FreqScale)i) {
-      case TFView::FreqScale::Linear:
+  for (int i = 0; i < (int)TFScene::FreqScale::NumFreqScale; i++) {
+    switch ((TFScene::FreqScale)i) {
+      case TFScene::FreqScale::Linear:
         m_freqScaleComboBox->addItem("Linear");
         break;
-      case TFView::FreqScale::Log:
+      case TFScene::FreqScale::Log:
         m_freqScaleComboBox->addItem("Log");
         break;
-      case TFView::FreqScale::ERB:
+      case TFScene::FreqScale::ERB:
         m_freqScaleComboBox->addItem("ERB");
         break;
-      case TFView::FreqScale::Bark:
+      case TFScene::FreqScale::Bark:
         m_freqScaleComboBox->addItem("Bark");
         break;
-      case TFView::FreqScale::Mel:
+      case TFScene::FreqScale::Mel:
         m_freqScaleComboBox->addItem("Mel");
         break;
       default:
@@ -362,11 +515,11 @@ void MainWindow::openActionTriggeredHandler() {
                       (Window::WindowType)m_windowTypeComboBox->currentIndex());
   m_waveView->init();
   m_waveView->drawWaveForm(m_sound);
-  m_tfView->setParentSound(m_sound);
-  m_tfView->genFreqIdx((TFView::FreqScale)m_freqScaleComboBox->currentIndex());
-  m_tfView->setFreqBounds(20.0, m_sound->fs() / 2.0);
-  m_tfView->setFlagModified();
-  m_tfView->drawTFMap(
+  m_tfScene->setParentSound(m_sound);
+  m_tfScene->genFreqIdx(
+      (TFScene::FreqScale)m_freqScaleComboBox->currentIndex());
+  m_tfScene->setFlagModified();
+  m_tfScene->drawTFMap(
       (Window::WindowType)m_windowTypeComboBox->currentIndex(),
       m_windowSizeList[m_windowSizeComboBox->currentIndex()].toInt());
   m_audioStream.reset(new AudioStream(m_sound));
@@ -422,31 +575,30 @@ void MainWindow::volSliderValueChangedHandler(int val) {
 }
 
 void MainWindow::windowTypeChangedHandler(int val) {
-  if (m_sound == nullptr) {
+  if (!m_sound) {
     return;
   }
-  m_tfView->setFlagModified();
-  m_tfView->drawTFMap(
+  m_tfScene->setFlagModified();
+  m_tfScene->drawTFMap(
       (Window::WindowType)val,
       m_windowSizeList[m_windowSizeComboBox->currentIndex()].toInt());
 }
 
 void MainWindow::windowSizeChangedHandler(int val) {
-  if (m_sound == nullptr) {
+  if (!m_sound) {
     return;
   }
-  m_tfView->setFlagModified();
-  m_tfView->drawTFMap((Window::WindowType)m_windowTypeComboBox->currentIndex(),
-                      m_windowSizeList[val].toInt());
+  m_tfScene->setFlagModified();
+  m_tfScene->drawTFMap((Window::WindowType)m_windowTypeComboBox->currentIndex(),
+                       m_windowSizeList[val].toInt());
 }
 
 void MainWindow::freqScaleChangedHandler(int val) {
-  if (m_sound == nullptr) {
+  if (!m_sound) {
     return;
   }
-  qDebug() << "freqScale changed: " << val;
-  m_tfView->setFreqScale((TFView::FreqScale)val);
-  m_tfView->drawTFMap(
+  m_tfScene->setFreqScale((TFScene::FreqScale)val);
+  m_tfScene->drawTFMap(
       (Window::WindowType)val,
       m_windowSizeList[m_windowSizeComboBox->currentIndex()].toInt());
 }
