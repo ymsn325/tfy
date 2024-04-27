@@ -50,19 +50,25 @@ class WaveView : public QGraphicsView {
 class TFScene;
 class TFView : public QGraphicsView {
  public:
-  enum FreqScale { Linear, Log, ERB, Bark, Mel, NumFreqScale };
-  TFView(int x, int y, int w, int h, MainWindow *parent);
+  TFView(QWidget *parent);
   ~TFView();
-  TFScene *scene() { return m_scene; }
-  void setParentSound(Sound *sound) { m_parentSound = sound; }
+
+ private:
+};
+
+class TFScene : public QGraphicsScene {
+ public:
+  TFScene(int x, int y, int w, int h, MainWindow *parent);
+  ~TFScene();
+  enum FreqScale { Linear, Log, ERB, Bark, Mel, NumFreqScale };
   void drawTFMap(Window::WindowType windowType, int windowSize);
   void setFreqScale(FreqScale type);
-  void setFreqBounds(double lo, double hi) {
-    m_freqLo = lo;
-    m_freqHi = hi;
-  }
   void setFlagModified() { m_flagModified = true; }
   void genFreqIdx(FreqScale scaleType);
+  void setCurrentStreamPosLine(double x);
+  void setParentSound(Sound *sound) { m_parentSound = sound; }
+  void mouseMoveEvent(QGraphicsSceneMouseEvent *e) override;
+  void drawFreqTicks();
   static double hz2erb(double hz) { return 21.3 * log10(1.0 + 0.00437 * hz); }
   static double erb2hz(double erb) {
     return ((pow(10.0, erb / 21.3) - 1.0) / 0.00437);
@@ -89,28 +95,14 @@ class TFView : public QGraphicsView {
  private:
   void double2rgb(const double x, unsigned char *r, unsigned char *g,
                   unsigned char *b);
-  unsigned char *m_data;
-  Sound *m_parentSound;
-  TFScene *m_scene;
-  FreqScale m_freqScale = Linear;
-  int *m_scaledIdx = nullptr;
-  bool m_flagModified;
-  double m_freqLo;
-  double m_freqHi;
-};
-
-class TFScene : public QGraphicsScene {
- public:
-  TFScene(int x, int y, int w, int h, MainWindow *parent);
-  ~TFScene();
-  void setCurrentStreamPosLine(double x);
-  void mouseMoveEvent(QGraphicsSceneMouseEvent *e) override;
-  void drawFreqTicks(TFView::FreqScale freqScale);
-
- private:
   MainWindow *m_parent;
   QGraphicsItem *m_currentStreamPosLine = nullptr;
   QGraphicsItemGroup *m_ticks = nullptr;
+  unsigned char *m_data;
+  Sound *m_parentSound = nullptr;
+  FreqScale m_freqScale = Linear;
+  int *m_scaledIdx = nullptr;
+  bool m_flagModified;
 };
 
 class MainWindow : public QMainWindow {
@@ -145,6 +137,7 @@ class MainWindow : public QMainWindow {
   QHBoxLayout *m_upperLayout;
   QVBoxLayout *m_pixmapLayout;
   TFView *m_tfView;
+  TFScene *m_tfScene;
   WaveView *m_waveView;
   QVBoxLayout *m_tfControllLayout;
   QComboBox *m_windowTypeComboBox;
