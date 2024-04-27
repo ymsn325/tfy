@@ -85,12 +85,36 @@ void TFScene::mouseMoveEvent(QGraphicsSceneMouseEvent *e) {
   if (!m_parentSound) {
     return;
   }
-  int fs = m_parentSound->fs();
+  double fs = m_parentSound->fs();
   double duration = m_parentSound->duration();
-  int y = e->scenePos().y();
-  int x = e->scenePos().x();
+  double y = e->scenePos().y();
+  double x = e->scenePos().x();
+  double h = height();
+  double w = width();
   double freq = (height() - y) / height() * fs / 2.0;
-  double time = x / width() * duration;
+  double time = x / w * duration;
+  double erbHi = hz2erb(fs / 2.0);
+  double barkHi = hz2bark(fs / 2.0);
+  double melHi = hz2mel(fs / 2.0);
+  switch (m_freqScale) {
+    case Linear:
+      freq = (h - y) / h * fs / 2.0;
+      break;
+    case Log:
+      freq = (pow(h, (h - y) / h) - 1.0) / h * fs / 2.0;
+      break;
+    case ERB:
+      freq = erb2hz((h - y) / h * erbHi);
+      break;
+    case Bark:
+      freq = bark2hz((h - y) / h * barkHi);
+      break;
+    case Mel:
+      freq = mel2hz((h - y) / h * melHi);
+      break;
+    default:
+      break;
+  }
   m_parent->freqLabel()->setText(QString::number(freq));
   m_parent->timeLabel()->setText(QString::number(time));
 }
@@ -265,7 +289,7 @@ void TFScene::setFreqScale(FreqScale type) {
       break;
     case FreqScale::Log:
       for (int k = 0; k < nFFT / 2; k++) {
-        m_scaledIdx[k] = (int)pow(nFFT / 2.0, (double)k / (nFFT / 2.0));
+        m_scaledIdx[k] = (int)(pow(nFFT / 2.0, (double)k / (nFFT / 2.0)) - 1.0);
       }
       break;
     case FreqScale::ERB:
